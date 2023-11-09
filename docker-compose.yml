@@ -2,12 +2,13 @@ version: '3'
 
 services:
   travelmate:
+    env_file:
+      - /opt/elasticbeanstalk/deployment/env.list
+
     build:
       context: .
       dockerfile: Dockerfile
 
-    env_file:
-      - /opt/elasticbeanstalk/deployment/env.list
     ports:
       - '4000:4000'
       - '8080:8080'
