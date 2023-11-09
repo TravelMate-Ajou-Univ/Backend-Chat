@@ -45,12 +45,6 @@ jobs:
           username: YuuuJeong
           password: ${{ secrets.ACCESS_TOKEN }}
 
-      # - name: Build and run Docker Compose
-      #   run: |
-      #     echo "DOCKER_IMAGE_PATH=${{ secrets.DOCKER_IMAGE_PATH }}" > .env
-      #     cat /opt/elasticbeanstalk/deployment/env.list
-      #     docker-compose up -d
-
       - name: Build and Push Docker image
         uses: docker/build-push-action@v3
         with:
