@@ -1,0 +1,90 @@
+name: TRAVELMATE-CICD
+
+on:
+  push:
+    branches: ['master']
+
+# Env
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE_PATH }}
+  DOCKER_CONTAINER: nest-server
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get code
+        uses: actions/checkout@v3
+      - name: Load & cache dependencies
+        uses: ./.github/actions/cached-deps
+      - name: Test code
+        id: run-tests
+        run: npm run test
+      - name: Upload test report
+        if: failure() && steps.run-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report
+          path: test.json
+  build:
+    needs: test
+    name: Build Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current commit (${{ github.sha }})
+        uses: actions/checkout@v3
+
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: YuuuJeong
+          password: ${{ secrets.ACCESS_TOKEN }}
+
+      # - name: Build and run Docker Compose
+      #   run: |
+      #     echo ${{secrets.DOCKER_IMAGE_PATH}}
+      #     docker-compose up -d
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate deploy.zip
+        run: zip -r deploy.zip . -x '*.git*' -x '*.github*'
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: zipfile
+          path: deploy.zip
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: zipfile
+
+      - uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          region: ap-northeast-2
+          application_name: TravelMate-chat
+          environment_name: TravelMate-chat-env
+          version_label: ver-${{ github.sha }}
+          use_existing_version_if_available: true
+          deployment_package: deploy.zip
+          wait_for_environment_recovery: 300
