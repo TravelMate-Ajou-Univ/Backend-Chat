@@ -15,7 +15,7 @@ COPY ./package*.json ./
 COPY ./package-lock.json ./
 COPY --from=0 /app/node_modules ./node_modules
 COPY --from=0 /app/dist ./dist
-COPY --from=0 /app/prisma ./prisma
+
 
 ENV PATH /app/node_modules/.bin:$PATH
 
