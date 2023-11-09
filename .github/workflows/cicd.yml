@@ -45,10 +45,10 @@ jobs:
           username: YuuuJeong
           password: ${{ secrets.ACCESS_TOKEN }}
 
-      # - name: Build and run Docker Compose
-      #   run: |
-      #     echo ${{secrets.DOCKER_IMAGE_PATH}}
-      #     docker-compose up -d
+      - name: Build and run Docker Compose
+        run: |
+          echo "DOCKER_IMAGE_PATH=${{ secrets.DOCKER_IMAGE_PATH }}" > .env
+          docker-compose up -d
 
       - name: Build and Push Docker image
         uses: docker/build-push-action@v3

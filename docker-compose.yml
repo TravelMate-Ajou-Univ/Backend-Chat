@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  travelmate:
+    image: ${DOCKER_IMAGE_PATH}
+    ports:
+      - '4000:4000'
+      - '8080:8080'
