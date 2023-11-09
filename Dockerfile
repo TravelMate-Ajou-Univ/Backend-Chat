@@ -20,4 +20,5 @@ COPY --from=0 /app/dist ./dist
 ENV PATH /app/node_modules/.bin:$PATH
 
 EXPOSE 8080
+EXPOSE 4000
 ENTRYPOINT ["npm", "run", "start:prod"]
