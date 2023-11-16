@@ -4,8 +4,8 @@ import { JwtAuthGuard } from 'src/user/strategies/jwt.strategy';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ChatRoomService } from './chat-room.service';
 import { CreateChatRoomDto } from './dtos/create-chat-room.dto';
-import { ChatRoomEntity } from './entities/chat-room.entitiy';
 import { UserEntity } from '../user/entities/user.entity';
+import { ChatRoomResponseDto } from './dtos/res/chat-room-response.dto';
 
 @Controller()
 export class ChatRoomController {
@@ -19,7 +19,7 @@ export class ChatRoomController {
   async createChatRoom(
     @CurrentUser() user: UserEntity,
     @Body() dto: CreateChatRoomDto,
-  ): Promise<ChatRoomEntity> {
+  ): Promise<ChatRoomResponseDto> {
     return await this.chatRoomService.createChatRoom(dto, user.id);
   }
 

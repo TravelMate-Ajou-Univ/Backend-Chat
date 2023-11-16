@@ -15,6 +15,10 @@ import express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.enableCors({
+    origin: '*',
+    credentials: true,
+  });
   app.use(express.static(join(__dirname, 'public')));
 
   app.useWebSocketAdapter(new SocketIoAdapter(app));
@@ -24,7 +28,7 @@ async function bootstrap() {
 
   const user = app.get<ConfigService>(ConfigService).get('SWAGGER_USER');
   const pw = app.get<ConfigService>(ConfigService).get('SWAGGER_PASSWORD');
-  console.log(user, pw);
+
   app.use(
     ['/api/docs'],
     basicAuth({

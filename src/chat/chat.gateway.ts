@@ -21,48 +21,62 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   //소켓 연결시 유저목록에 추가
   public handleConnection(client: Socket): void {
-    console.log('connected', client.id);
-    client.leave(client.id);
-    client.data.roomId = `room:lobby`;
-    client.join('room:lobby');
+    console.log('connected');
+    console.log(client.data, 'data');
+    // this.server.emit('sendMessage', () => {
+    //   const { roomId, nickname } = client.data;
+    //   client.to(roomId).emit('getMessage', {
+    //     message: `${nickname}님이 채팅방에 접속하였습니다.`,
+    //   });
+    // });
+    // client.join(`room:${roomId}`);
   }
 
   //소켓 연결 해제시 유저목록에서 제거
   public handleDisconnect(client: Socket): void {
-    const { roomId } = client.data;
-    if (
-      roomId != 'room:lobby' &&
-      !this.server.sockets.adapter.rooms.get(roomId)
-    ) {
-      this.ChatRoomService.deleteChatRoom(roomId);
-      this.server.emit(
-        'getChatRoomList',
-        this.ChatRoomService.getChatRoomList(),
-      );
-    }
-    console.log('disonnected', client.id);
-  }
-
-  //메시지가 전송되면 모든 유저에게 메시지 전송
-  @SubscribeMessage('sendMessage')
-  sendMessage(client: Socket, message: string): void {
-    client.rooms.forEach((roomId) =>
+    this.server.emit('sendMessage', () => {
+      const { roomId, nickname } = client.data;
       client.to(roomId).emit('getMessage', {
         id: client.id,
-        nickname: client.data.nickname,
-        message,
-      }),
-    );
+        nickname,
+        message: `${nickname}님이 채팅연결이 끊어졌습니다.`,
+      });
+    });
+    this.server.emit('getChatRoomList', this.ChatRoomService.getChatRoomList());
   }
 
-  //처음 접속시 닉네임 등 최초 설정
+  @SubscribeMessage('sendMessage')
+  sendMessage(client: Socket, message: string): void {
+    console.log('sendMessage', client.data, 'data', message);
+    const { roomId, nickname } = client.data;
+    client.to(roomId).emit('getMessage', {
+      id: client.id,
+      nickname,
+      message,
+    });
+  }
+
+  // //메시지가 전송되면 모든 유저에게 메시지 전송
+  // @SubscribeMessage('sendMessage')
+  // sendMessage(client: Socket, message: string): void {
+  //   client.rooms.forEach((roomId) =>
+  //     client.to(roomId).emit('getMessage', {
+  //       id: client.id,
+  //       nickname: client.data.nickname,
+  //       message,
+  //     }),
+  //   );
+  // }
+
   @SubscribeMessage('setInit')
   setInit(client: Socket, data: setInitDTO): setInitDTO | undefined {
     // 이미 최초 세팅이 되어있는 경우 패스
+
     if (client.data.isInit) {
+      console.log('already Init');
       return;
     }
-
+    console.log('setInit', data);
     client.data.nickname = data.nickname
       ? data.nickname
       : '낯선사람' + client.id;

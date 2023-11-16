@@ -10,9 +10,17 @@ export class UserService {
     private readonly configService: ConfigService,
   ) {}
 
+  async findUsersByIds(userIds: number[]) {
+    const baseUrl = this.configService.get<string>('API_SERVER_URL');
+    const queryParams = userIds.map((id) => `userIds=${id}`).join('&');
+    const url = `${baseUrl}/users?${queryParams}`;
+    const { data } = await firstValueFrom(this.httpService.get(url));
+    return data;
+  }
+
   async findUserById(userId: number) {
-    const url =
-      this.configService.get<string>('API_SERVER_URL') + `/users/${userId}`;
+    const baseUrl = this.configService.get<string>('API_SERVER_URL');
+    const url = `${baseUrl}/users?userIds=${userId}`;
     const { data } = await firstValueFrom(this.httpService.get(url));
     return data;
   }
