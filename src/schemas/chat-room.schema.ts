@@ -5,6 +5,8 @@ export type ChatRoomDocument = HydratedDocument<ChatRoom>;
 
 @Schema({})
 export class ChatRoom {
+  _id: Types.ObjectId;
+
   @Prop({
     required: true,
   })

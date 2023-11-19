@@ -1,13 +1,12 @@
-export class setInitDTO {
-  nickname: string;
-  room: {
-    roomId: string;
-    roomName: string;
-  };
-}
+import { Types } from 'mongoose';
+import { MessageType } from 'src/schemas/chat.schema';
 
-export class chatRoomListDTO {
-  roomId: string;
-  roomName: string;
-  cheifId: string | null;
+export class ChatDto {
+  _id: Types.ObjectId;
+  content: string;
+  type: MessageType;
+  user_id: number;
+  room_id: Types.ObjectId;
+  created_at: Date;
+  updated_at: Date;
 }

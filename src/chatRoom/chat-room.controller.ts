@@ -5,7 +5,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ChatRoomService } from './chat-room.service';
 import { CreateChatRoomDto } from './dtos/create-chat-room.dto';
 import { UserEntity } from '../user/entities/user.entity';
-import { ChatRoomResponseDto } from './dtos/res/chat-room-response.dto';
+import { CreateChatRoomResponseDto } from './dtos/res/create-chat-room-response.dto';
 
 @Controller()
 export class ChatRoomController {
@@ -19,7 +19,7 @@ export class ChatRoomController {
   async createChatRoom(
     @CurrentUser() user: UserEntity,
     @Body() dto: CreateChatRoomDto,
-  ): Promise<ChatRoomResponseDto> {
+  ): Promise<CreateChatRoomResponseDto> {
     return await this.chatRoomService.createChatRoom(dto, user.id);
   }
 

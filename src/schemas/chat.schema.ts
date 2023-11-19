@@ -3,31 +3,27 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export type ChatDocument = HydratedDocument<Chat>;
 
-enum MessageType {
-  IMAGE,
-  TEXT,
+export enum MessageType {
+  IMAGE = 'image',
+  TEXT = 'text',
 }
 
 @Schema({
   timestamps: true,
 })
 export class Chat {
+  _id: Types.ObjectId;
+
   @Prop({
     required: true,
-    unique: true,
+    ref: 'ChatRoom',
   })
-  /// 변경
-  id: Types.ObjectId;
+  room_id: Types.ObjectId;
 
   @Prop({
     required: true,
   })
-  roomId: number;
-
-  @Prop({
-    required: true,
-  })
-  userId: number;
+  user_id: number;
 
   @Prop({
     required: true,

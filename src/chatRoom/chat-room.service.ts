@@ -1,28 +1,41 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { ChatRoom, ChatRoomDocument } from 'src/schemas/chat-room.schema';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Types } from 'mongoose';
+import { ChatRoom } from 'src/schemas/chat-room.schema';
 import { CreateChatRoomDto } from './dtos/create-chat-room.dto';
 import { UserService } from 'src/user/user.service';
 import {
-  ChatRoomResponseDto,
+  CreateChatRoomResponseDto,
   UserInfo,
-} from './dtos/res/chat-room-response.dto';
+} from './dtos/res/create-chat-room-response.dto';
+import { ChatService } from 'src/chat/chat.service';
+import { ChatRoomResponseDto } from './dtos/res/chat-room-response.dto';
+import { ChatRoomRepository } from './chat-room.repository';
 
 @Injectable()
 export class ChatRoomService {
   constructor(
-    @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoom>,
+    private readonly roomRepository: ChatRoomRepository,
+    private readonly chatService: ChatService,
     private readonly userService: UserService,
   ) {}
 
   async getMyChatRooms(userId: number): Promise<ChatRoomResponseDto[]> {
-    const chatRooms = await this.chatRoomModel.find({ memberIds: userId });
+    const chatRooms = await this.roomRepository.findRoomByUserId(userId);
     const chatRoomDtos: ChatRoomResponseDto[] = [];
 
     for (const chatRoom of chatRooms) {
       const members = await this.userService.findUsersByIds(chatRoom.memberIds);
-      chatRoomDtos.push({ chatRoom, members });
+      const lastChat = await this.chatService.getLastChatById(chatRoom._id);
+
+      chatRoomDtos.push({
+        chatRoom,
+        members,
+        lastChat,
+      });
     }
 
     return chatRoomDtos;
@@ -31,14 +44,48 @@ export class ChatRoomService {
   async createChatRoom(
     dto: CreateChatRoomDto,
     userId: number,
-  ): Promise<ChatRoomResponseDto> {
+  ): Promise<CreateChatRoomResponseDto> {
     const users: UserInfo[] = await this.userService.findUsersByIds(
       dto.memberIds,
     );
 
     dto.memberIds.push(userId);
-    const newChatRoom = new this.chatRoomModel({ ...dto, creatorId: userId });
+    const chatRoom = await this.roomRepository.createChatRoom(dto, userId);
 
-    return { chatRoom: await newChatRoom.save(), members: users };
+    return { chatRoom, members: users };
+  }
+
+  async inviteFriendToRoom(friendId: number, roomId: Types.ObjectId) {
+    const room: ChatRoom | null =
+      await this.roomRepository.findRoomById(roomId);
+
+    if (!room) {
+      throw new NotFoundException('찾을 수 없는 채팅방입니다');
+    }
+
+    room.memberIds.push(friendId);
+
+    await this.roomRepository.updateChatRoom(room);
+  }
+
+  async exitChatRoom(userId: number, roomId: Types.ObjectId) {
+    const room: ChatRoom | null =
+      await this.roomRepository.findRoomById(roomId);
+
+    if (!room) {
+      throw new NotFoundException('찾을 수 없는 채팅방입니다');
+    }
+
+    if (room.memberIds.indexOf(userId) === -1) {
+      throw new BadRequestException('이미 나간 채팅방입니다.');
+    }
+
+    const newMemberIds = room.memberIds.filter((item) => {
+      return item !== userId;
+    });
+
+    room.memberIds = newMemberIds;
+
+    await this.roomRepository.updateChatRoom(room);
   }
 }
