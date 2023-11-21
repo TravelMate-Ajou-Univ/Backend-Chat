@@ -78,13 +78,12 @@ export class ChatGateway
   handleMessage(client: Socket, payload: Message): void {
     const { userId, nickname, message, roomId } = payload;
 
-    // this.chatService.createChat({
-    //   room_id: roomId,
-    //   content: message,
-    //   type: MessageType.TEXT,
-    //   user_id: userId,
-    // });
-    console.log('a');
+    this.chatService.createChat({
+      room_id: roomId,
+      content: message,
+      type: MessageType.TEXT,
+      user_id: userId,
+    });
 
     this.server.to(`${roomId}`).emit('message', {
       sender: client.id,
@@ -102,7 +101,7 @@ export class ChatGateway
     try {
       const { nickname, roomId, userId } = payload;
 
-      const message = `${nickname}님이 방에 입장하였습니다.`;
+      const message = `${nickname}님이 방에서 나갔습니다.`;
 
       await this.roomService.exitChatRoom(userId, new Types.ObjectId(roomId));
       client.leave(`${roomId}`);
