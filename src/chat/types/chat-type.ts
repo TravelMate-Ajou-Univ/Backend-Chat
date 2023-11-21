@@ -1,3 +1,4 @@
+import { Decimal128 } from 'mongoose';
 import { MessageType } from 'src/schemas/chat.schema';
 
 export type Message = {
@@ -18,4 +19,15 @@ export type InviteChatRoomType = {
   friendNickname: string;
   roomId: string;
   friendId: number;
+};
+
+export type PostBookmarkType = {
+  longitude: Decimal128;
+  latitude: Decimal128;
+  roomId: string;
+};
+
+export type DeleteBookmarkType = {
+  roomId: string;
+  bookmarkId: number;
 };

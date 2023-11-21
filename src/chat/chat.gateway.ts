@@ -9,12 +9,15 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import {
+  DeleteBookmarkType,
   EnterChatRoomType,
   InviteChatRoomType,
   Message,
+  PostBookmarkType,
 } from './types/chat-type';
 import { ChatRoomService } from 'src/chatRoom/chat-room.service';
 import { Types } from 'mongoose';
+import { MessageType } from 'src/schemas/chat.schema';
 
 @WebSocketGateway({
   cors: {
@@ -50,8 +53,8 @@ export class ChatGateway
     const { nickname, roomId } = payload;
 
     const message = `${nickname}님이 방에 입장하였습니다.`;
-
-    this.server.to(`${roomId}`).emit('message', {
+    client.join(roomId);
+    this.server.to(`${roomId}`).emit('adminMessage', {
       sender: client.id,
       message,
     });
@@ -61,11 +64,11 @@ export class ChatGateway
   inviteFriend(client: Socket, payload: InviteChatRoomType): void {
     const { friendNickname, friendId, roomId } = payload;
 
-    const message = `${friendNickname}님이 방에 입장하였습니다.`;
+    const message = `${friendNickname}님이 방에 초대되었습니다.`;
 
     this.roomService.inviteFriendToRoom(friendId, new Types.ObjectId(roomId));
 
-    this.server.to(`${roomId}`).emit('message', {
+    this.server.to(`${roomId}`).emit('adminMessage', {
       sender: client.id,
       message,
     });
@@ -73,18 +76,21 @@ export class ChatGateway
 
   @SubscribeMessage('sendMessage')
   handleMessage(client: Socket, payload: Message): void {
-    const { userId, nickname, message, type, roomId } = payload;
+    const { userId, nickname, message, roomId } = payload;
 
-    this.chatService.createChat({
-      room_id: roomId,
-      content: message,
-      type,
-      user_id: userId,
-    });
+    // this.chatService.createChat({
+    //   room_id: roomId,
+    //   content: message,
+    //   type: MessageType.TEXT,
+    //   user_id: userId,
+    // });
+    console.log('a');
 
-    this.server.emit('message', {
+    this.server.to(`${roomId}`).emit('message', {
       sender: client.id,
-      message: payload.message,
+      userId,
+      message,
+      nickname,
     });
   }
 
@@ -99,7 +105,7 @@ export class ChatGateway
       const message = `${nickname}님이 방에 입장하였습니다.`;
 
       await this.roomService.exitChatRoom(userId, new Types.ObjectId(roomId));
-
+      client.leave(`${roomId}`);
       this.server.to(`${roomId}`).emit('message', {
         sender: client.id,
         message,
@@ -107,5 +113,28 @@ export class ChatGateway
     } catch (error) {
       this.server.emit('error', error);
     }
+  }
+
+  @SubscribeMessage('postBookmark')
+  postBookmark(client: Socket, payload: PostBookmarkType): void {
+    const { longitude, latitude, roomId } = payload;
+
+    this.server.to(`${roomId}`).emit(`postBookmark`, {
+      sender: client.id,
+      data: {
+        longitude,
+        latitude,
+      },
+    });
+  }
+
+  @SubscribeMessage('deleteBookmark')
+  deleteBookmark(client: Socket, payload: DeleteBookmarkType): void {
+    const { bookmarkId, roomId } = payload;
+
+    this.server.to(`${roomId}`).emit(`deleteBookmark`, {
+      sender: client.id,
+      bookmarkId,
+    });
   }
 }
