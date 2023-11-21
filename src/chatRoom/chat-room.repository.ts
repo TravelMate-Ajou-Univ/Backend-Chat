@@ -16,7 +16,9 @@ export class ChatRoomRepository {
   }
 
   async findRoomByUserId(userId: number): Promise<ChatRoom[]> {
-    return await this.roomModel.find({ memberIds: userId });
+    return await this.roomModel
+      .find({ memberIds: userId })
+      .sort({ created_at: -1 });
   }
   async findRoomById(roomId: Types.ObjectId): Promise<ChatRoom | null> {
     return await this.roomModel.findById({ _id: roomId });
