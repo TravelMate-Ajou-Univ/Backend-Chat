@@ -35,7 +35,9 @@ export class Chat {
   })
   type: MessageType;
 
-  @Prop({})
+  @Prop({
+    default: Date.now(),
+  })
   createdAt: Date;
 }
 

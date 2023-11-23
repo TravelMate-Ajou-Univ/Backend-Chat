@@ -20,8 +20,11 @@ import {
 } from './types/chat-type';
 import { ChatRoomService } from 'src/chatRoom/chat-room.service';
 import { Types } from 'mongoose';
-import { UseFilters } from '@nestjs/common';
-import { SocketExceptionFilter } from 'src/common/filiters/socket.exception';
+import { BadRequestException, UseFilters } from '@nestjs/common';
+import {
+  SocketException,
+  SocketExceptionFilter,
+} from 'src/common/filiters/socket.exception';
 import { InjectQueue, Processor } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { MessageType } from 'src/schemas/chat.schema';
@@ -40,7 +43,6 @@ export class ChatGateway
   server: Server;
   constructor(
     @InjectQueue('chat') private readonly chatQueue: Queue,
-    private readonly chatService: ChatService,
     private readonly roomService: ChatRoomService,
   ) {}
 
@@ -81,6 +83,9 @@ export class ChatGateway
   ): void {
     const { nickname, roomId } = payload;
     const members = payload.members;
+    // if (members.length === 0) {
+    //   throw new SocketException('BadRequest', '초대할 사람을 적용해주세요');
+    // }
 
     const content = `${nickname} 님이 ${members
       .map((member) => member.nickname)
@@ -94,7 +99,7 @@ export class ChatGateway
     });
 
     const friendIds = members.map((member) => {
-      return member.userId;
+      return member.id;
     });
 
     this.roomService.inviteFriendToRoom(friendIds, new Types.ObjectId(roomId));
@@ -118,7 +123,6 @@ export class ChatGateway
     const createdAt = new Date();
     payload.type = MessageType.TEXT;
     payload.createdAt = createdAt;
-    payload.roomId = new Types.ObjectId(roomId);
 
     this.chatQueue.add('send-message', payload);
 
@@ -136,7 +140,6 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: BaseChatRoomType,
   ): Promise<void> {
-    console.log(payload, 'exitChatRoom');
     const { nickname, roomId, userId } = payload;
 
     const content = `${nickname}님이 방에서 나갔습니다.`;

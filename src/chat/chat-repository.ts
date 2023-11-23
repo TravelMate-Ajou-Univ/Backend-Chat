@@ -9,6 +9,7 @@ export class ChatRepository {
   constructor(@InjectModel(Chat.name) private chatModel: Model<Chat>) {}
 
   async createChat(dto: CreateChatDto): Promise<Chat> {
+    dto.roomId = new Types.ObjectId(dto.roomId);
     return await this.chatModel.create(dto);
   }
 
@@ -17,6 +18,6 @@ export class ChatRepository {
   }
 
   async findLastChatByRoomId(roomId: Types.ObjectId): Promise<Chat | null> {
-    return await this.chatModel.findOne({ roomId });
+    return await this.chatModel.findOne({ roomId }).sort({ createdAt: 'desc' });
   }
 }

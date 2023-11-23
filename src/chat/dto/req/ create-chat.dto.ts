@@ -30,5 +30,5 @@ export class CreateChatDto {
     description: 'room의 고유 id',
     example: '655619f9f92ef0ab82b48a8b',
   })
-  roomId: Types.ObjectId;
+  roomId: string | Types.ObjectId;
 }

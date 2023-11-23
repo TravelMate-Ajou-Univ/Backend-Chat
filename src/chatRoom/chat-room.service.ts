@@ -82,7 +82,6 @@ export class ChatRoomService {
     if (!room) {
       throw new NotFoundException('찾을 수 없는 채팅방입니다');
     }
-
     room.memberIds = [...room.memberIds, ...friendIds];
 
     await this.roomRepository.updateChatRoom(room);

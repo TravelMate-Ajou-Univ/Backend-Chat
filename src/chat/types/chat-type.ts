@@ -1,20 +1,20 @@
 import { Decimal128 } from 'mongoose';
 import { ChatDto } from '../dto/chat.dto';
 
+export const BroadCastUserId = 0;
+
 export type BaseChatRoomType = {
   nickname: string;
   roomId: string;
   userId: number;
 };
 
-export const BroadCastUserId = 0;
-
 export type ExtendChatType = Partial<ChatDto> & {
   nickname: string;
 };
 
 export type UserType = {
-  userId: number;
+  id: number;
   nickname: string;
   profileImageId: string | null;
 };
