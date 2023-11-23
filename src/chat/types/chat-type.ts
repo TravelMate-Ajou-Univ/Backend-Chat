@@ -1,24 +1,28 @@
 import { Decimal128 } from 'mongoose';
-import { MessageType } from 'src/schemas/chat.schema';
+import { ChatDto } from '../dto/chat.dto';
 
-export type Message = {
-  userId: number;
+export type BaseChatRoomType = {
   nickname: string;
-  message: string;
-  type: MessageType.TEXT;
   roomId: string;
+  userId: number;
 };
 
-export type EnterChatRoomType = {
+export const BroadCastUserId = 0;
+
+export type ExtendChatType = Partial<ChatDto> & {
   nickname: string;
-  roomId: string;
+};
+
+export type UserType = {
   userId: number;
+  nickname: string;
+  profileImageId: string | null;
 };
 
 export type InviteChatRoomType = {
-  friendNickname: string;
+  members: UserType[];
   roomId: string;
-  friendId: number;
+  nickname: string;
 };
 
 export type PostBookmarkType = {

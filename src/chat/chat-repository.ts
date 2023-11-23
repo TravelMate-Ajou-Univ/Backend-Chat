@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Chat } from 'src/schemas/chat.schema';
+import { Chat, MessageType } from 'src/schemas/chat.schema';
 import { CreateChatDto } from './dto/req/ create-chat.dto';
 
 @Injectable()
@@ -13,12 +13,10 @@ export class ChatRepository {
   }
 
   async findChatsByRoomId(roomId: Types.ObjectId): Promise<Chat[]> {
-    return await this.chatModel.find({ room_id: roomId });
+    return await this.chatModel.find({ roomId });
   }
 
   async findLastChatByRoomId(roomId: Types.ObjectId): Promise<Chat | null> {
-    return await this.chatModel
-      .findOne({ room_id: roomId })
-      .sort({ created_at: -1 });
+    return await this.chatModel.findOne({ roomId });
   }
 }

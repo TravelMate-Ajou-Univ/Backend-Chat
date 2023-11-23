@@ -5,8 +5,7 @@ export class ChatDto {
   _id: Types.ObjectId;
   content: string;
   type: MessageType;
-  user_id: number;
-  room_id: Types.ObjectId;
-  created_at: Date;
-  updated_at: Date;
+  userId: number;
+  roomId: Types.ObjectId;
+  createdAt: Date;
 }

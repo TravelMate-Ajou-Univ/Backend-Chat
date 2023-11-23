@@ -5,20 +5,29 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
+  ConnectedSocket,
+  MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import {
+  BaseChatRoomType,
+  BroadCastUserId,
   DeleteBookmarkType,
-  EnterChatRoomType,
+  ExtendChatType,
   InviteChatRoomType,
-  Message,
   PostBookmarkType,
 } from './types/chat-type';
 import { ChatRoomService } from 'src/chatRoom/chat-room.service';
 import { Types } from 'mongoose';
+import { UseFilters } from '@nestjs/common';
+import { SocketExceptionFilter } from 'src/common/filiters/socket.exception';
+import { InjectQueue, Processor } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { MessageType } from 'src/schemas/chat.schema';
 
+@UseFilters(new SocketExceptionFilter())
+@Processor('chat')
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -30,16 +39,17 @@ export class ChatGateway
   @WebSocketServer()
   server: Server;
   constructor(
+    @InjectQueue('chat') private readonly chatQueue: Queue,
     private readonly chatService: ChatService,
     private readonly roomService: ChatRoomService,
   ) {}
 
-  handleConnection(client: Socket) {
+  handleConnection(@ConnectedSocket() client: Socket) {
     // Handle new WebSocket connection
     console.log(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(@ConnectedSocket() client: Socket) {
     // Handle WebSocket disconnection
     console.log(`Client disconnected: ${client.id}`);
   }
@@ -49,10 +59,14 @@ export class ChatGateway
   }
 
   @SubscribeMessage('enterChatRoom')
-  enterChatRoom(client: Socket, payload: EnterChatRoomType): void {
+  enterChatRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: BaseChatRoomType,
+  ): void {
     const { nickname, roomId } = payload;
 
     const message = `${nickname}님이 방에 입장하였습니다.`;
+
     client.join(roomId);
     this.server.to(`${roomId}`).emit('adminMessage', {
       sender: client.id,
@@ -61,61 +75,96 @@ export class ChatGateway
   }
 
   @SubscribeMessage('inviteFriend')
-  inviteFriend(client: Socket, payload: InviteChatRoomType): void {
-    const { friendNickname, friendId, roomId } = payload;
+  inviteFriend(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: InviteChatRoomType,
+  ): void {
+    const { nickname, roomId } = payload;
+    const members = payload.members;
 
-    const message = `${friendNickname}님이 방에 초대되었습니다.`;
+    const content = `${nickname} 님이 ${members
+      .map((member) => member.nickname)
+      .join(', ')} 님을 방에 초대하였습니다.`;
 
-    this.roomService.inviteFriendToRoom(friendId, new Types.ObjectId(roomId));
+    this.chatQueue.add('send-message', {
+      content,
+      type: MessageType.TEXT,
+      userId: BroadCastUserId,
+      roomId,
+    });
 
-    this.server.to(`${roomId}`).emit('adminMessage', {
+    const friendIds = members.map((member) => {
+      return member.userId;
+    });
+
+    this.roomService.inviteFriendToRoom(friendIds, new Types.ObjectId(roomId));
+
+    this.server.to(`${roomId}`).emit('message', {
+      userId: BroadCastUserId,
       sender: client.id,
-      message,
+      content,
+      members,
     });
   }
 
   @SubscribeMessage('sendMessage')
-  handleMessage(client: Socket, payload: Message): void {
-    const { userId, nickname, message, roomId } = payload;
+  async handleMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: ExtendChatType,
+  ): Promise<void> {
+    const { roomId, content, userId, nickname } = payload;
 
-    this.chatService.createChat({
-      room_id: roomId,
-      content: message,
-      type: MessageType.TEXT,
-      user_id: userId,
-    });
+    const createdAt = new Date();
+    payload.type = MessageType.TEXT;
+    payload.createdAt = createdAt;
+    payload.roomId = new Types.ObjectId(roomId);
+
+    this.chatQueue.add('send-message', payload);
 
     this.server.to(`${roomId}`).emit('message', {
       sender: client.id,
       userId,
-      message,
+      content,
       nickname,
+      createdAt: createdAt,
     });
   }
 
   @SubscribeMessage('exitChatRoom')
   async exitChatRoom(
-    client: Socket,
-    payload: EnterChatRoomType,
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: BaseChatRoomType,
   ): Promise<void> {
-    try {
-      const { nickname, roomId, userId } = payload;
+    console.log(payload, 'exitChatRoom');
+    const { nickname, roomId, userId } = payload;
 
-      const message = `${nickname}님이 방에서 나갔습니다.`;
+    const content = `${nickname}님이 방에서 나갔습니다.`;
 
-      await this.roomService.exitChatRoom(userId, new Types.ObjectId(roomId));
-      client.leave(`${roomId}`);
-      this.server.to(`${roomId}`).emit('message', {
-        sender: client.id,
-        message,
-      });
-    } catch (error) {
-      this.server.emit('error', error);
-    }
+    this.chatQueue.add('send-message', {
+      content,
+      type: MessageType.TEXT,
+      userId: BroadCastUserId,
+      roomId,
+    });
+
+    client.leave(`${roomId}`);
+
+    await this.roomService.exitChatRoom(userId, new Types.ObjectId(roomId));
+
+    this.server.to(`${roomId}`).emit('message', {
+      userId: BroadCastUserId,
+      sender: client.id,
+      content,
+      leaveUserId: userId,
+    });
   }
 
   @SubscribeMessage('postBookmark')
-  postBookmark(client: Socket, payload: PostBookmarkType): void {
+  postBookmark(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: PostBookmarkType,
+  ): void {
     const { longitude, latitude, roomId } = payload;
 
     this.server.to(`${roomId}`).emit(`postBookmark`, {
@@ -128,7 +177,10 @@ export class ChatGateway
   }
 
   @SubscribeMessage('deleteBookmark')
-  deleteBookmark(client: Socket, payload: DeleteBookmarkType): void {
+  deleteBookmark(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: DeleteBookmarkType,
+  ): void {
     const { bookmarkId, roomId } = payload;
 
     this.server.to(`${roomId}`).emit(`deleteBookmark`, {

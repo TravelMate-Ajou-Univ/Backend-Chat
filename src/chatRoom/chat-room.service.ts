@@ -14,6 +14,9 @@ import {
 import { ChatService } from 'src/chat/chat.service';
 import { ChatRoomResponseDto } from './dtos/res/chat-room-response.dto';
 import { ChatRoomRepository } from './chat-room.repository';
+import { BroadCastUserId } from 'src/chat/types/chat-type';
+import { MessageType } from 'src/schemas/chat.schema';
+import { last } from 'rxjs';
 
 @Injectable()
 export class ChatRoomService {
@@ -50,12 +53,29 @@ export class ChatRoomService {
     );
 
     dto.memberIds.push(userId);
+    const members = await this.userService.findUsersByIds(dto.memberIds);
+
+    const invitedUsers = members.filter((member) => member.id !== userId);
+
+    const invitationString = `${
+      members.find((member) => member.id === userId).nickname
+    }님이 ${invitedUsers
+      .map((user) => user.nickname)
+      .join(', ')} 님을 방에 초대하였습니다.`;
+
     const chatRoom = await this.roomRepository.createChatRoom(dto, userId);
+
+    await this.chatService.createChat({
+      userId: BroadCastUserId,
+      type: MessageType.TEXT,
+      roomId: chatRoom._id,
+      content: invitationString,
+    });
 
     return { chatRoom, members: users };
   }
 
-  async inviteFriendToRoom(friendId: number, roomId: Types.ObjectId) {
+  async inviteFriendToRoom(friendIds: number[], roomId: Types.ObjectId) {
     const room: ChatRoom | null =
       await this.roomRepository.findRoomById(roomId);
 
@@ -63,7 +83,7 @@ export class ChatRoomService {
       throw new NotFoundException('찾을 수 없는 채팅방입니다');
     }
 
-    room.memberIds.push(friendId);
+    room.memberIds = [...room.memberIds, ...friendIds];
 
     await this.roomRepository.updateChatRoom(room);
   }

@@ -5,15 +5,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import mongoose from 'mongoose';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from './chat/chat.module';
-import { ChatClientModule } from './chat/chatClient/chat-client.module';
 import { ChatRoomModule } from './chatRoom/chat-room.module';
 import jwtConfig from './config/jwt.config';
 import { UserModule } from './user/user.module';
+import { RedisModule } from './redis/redis-module';
+import { QueueModule } from './bull/queue.module';
 
 @Module({
   imports: [
     ChatModule,
-    ChatClientModule,
     ChatRoomModule,
     UserModule,
     ConfigModule.forRoot({
@@ -34,6 +34,8 @@ import { UserModule } from './user/user.module';
       }),
       inject: [ConfigService],
     }),
+    RedisModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService],

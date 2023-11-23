@@ -15,10 +15,12 @@ import { RedisIoAdapter } from './chat/adapters/socket-io.adapters';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
   app.enableCors({
     origin: '*',
     credentials: true,
   });
+
   app.use(express.static(join(__dirname, 'public')));
 
   app.useWebSocketAdapter(new RedisIoAdapter(app));

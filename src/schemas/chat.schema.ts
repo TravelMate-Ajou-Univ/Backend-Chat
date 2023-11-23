@@ -9,7 +9,7 @@ export enum MessageType {
 }
 
 @Schema({
-  timestamps: true,
+  timestamps: false,
 })
 export class Chat {
   _id: Types.ObjectId;
@@ -18,12 +18,12 @@ export class Chat {
     required: true,
     ref: 'ChatRoom',
   })
-  room_id: Types.ObjectId;
+  roomId: Types.ObjectId;
 
   @Prop({
     required: true,
   })
-  user_id: number;
+  userId: number;
 
   @Prop({
     required: true,
@@ -35,11 +35,8 @@ export class Chat {
   })
   type: MessageType;
 
-  @Prop({ default: Date.now })
-  created_at: Date;
-
-  @Prop({ default: Date.now })
-  updated_at: Date;
+  @Prop({})
+  createdAt: Date;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);

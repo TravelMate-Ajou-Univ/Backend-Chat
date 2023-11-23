@@ -6,11 +6,15 @@ import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
 import { ChatRepository } from './chat-repository';
 import { ChatRoomModule } from 'src/chatRoom/chat-room.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
     forwardRef(() => ChatRoomModule),
     MongooseModule.forFeature([{ name: Chat.name, schema: ChatSchema }]),
+    BullModule.registerQueue({
+      name: 'chat',
+    }),
   ],
   controllers: [ChatController],
   providers: [ChatGateway, ChatService, ChatRepository],

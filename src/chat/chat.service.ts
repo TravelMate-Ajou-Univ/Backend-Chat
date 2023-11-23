@@ -9,12 +9,10 @@ export class ChatService {
   constructor(private readonly chatRepository: ChatRepository) {}
 
   async createChat(dto: CreateChatDto) {
-    return this.chatRepository.createChat(dto);
+    return await this.chatRepository.createChat(dto);
   }
 
-  async getLastChatById(roomId: string | Types.ObjectId) {
-    return await this.chatRepository.findLastChatByRoomId(
-      new Types.ObjectId(roomId),
-    );
+  async getLastChatById(roomId: Types.ObjectId) {
+    return await this.chatRepository.findLastChatByRoomId(roomId);
   }
 }

@@ -18,7 +18,7 @@ export class ChatRoom {
   memberIds: number[];
 
   @Prop({ default: Date.now })
-  created_at: Date;
+  createdAt: Date;
 
   @Prop()
   creatorId: number;

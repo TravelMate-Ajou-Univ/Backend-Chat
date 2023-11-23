@@ -5,5 +5,5 @@ export class ChatRoomDto {
   name: string;
   creatorId: number;
   memberIds: number[];
-  created_at: Date;
+  createdAt: Date;
 }
