@@ -13,15 +13,14 @@ export class ChatRoomController {
 
   @ApiOperation({ summary: '채팅방 생성' })
   @ApiResponse({})
-  // @ApiBearerAuth()
-  // @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Post('chatroom')
   async createChatRoom(
     @CurrentUser() user: UserEntity,
     @Body() dto: CreateChatRoomDto,
   ): Promise<CreateChatRoomResponseDto> {
-    const userId = 1;
-    return await this.chatRoomService.createChatRoom(dto, userId);
+    return await this.chatRoomService.createChatRoom(dto, user.id);
   }
 
   @ApiOperation({ summary: '나의 채팅방 조회' })
