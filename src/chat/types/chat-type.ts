@@ -1,4 +1,3 @@
-import { Decimal128 } from 'mongoose';
 import { ChatDto } from '../dto/chat.dto';
 
 export const BroadCastUserId = 0;
@@ -26,12 +25,18 @@ export type InviteChatRoomType = {
 };
 
 export type PostBookmarkType = {
-  longitude: Decimal128;
-  latitude: Decimal128;
+  location: LocationWithContent;
   roomId: string;
 };
 
 export type DeleteBookmarkType = {
   roomId: string;
   bookmarkId: number;
+};
+
+export type LocationWithContent = {
+  latitude: number;
+  longitude: number;
+  content?: string;
+  placeId?: string;
 };

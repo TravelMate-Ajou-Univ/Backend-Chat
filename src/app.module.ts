@@ -10,6 +10,7 @@ import jwtConfig from './config/jwt.config';
 import { UserModule } from './user/user.module';
 import { RedisModule } from './redis/redis-module';
 import { QueueModule } from './bull/queue.module';
+import { ExitRecordModule } from './exitRecord/exit-record.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { QueueModule } from './bull/queue.module';
     }),
     RedisModule,
     QueueModule,
+    ExitRecordModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService],

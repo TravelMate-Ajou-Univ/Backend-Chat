@@ -9,7 +9,6 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { ChatService } from './chat.service';
 import {
   BaseChatRoomType,
   BroadCastUserId,
@@ -20,14 +19,12 @@ import {
 } from './types/chat-type';
 import { ChatRoomService } from 'src/chatRoom/chat-room.service';
 import { Types } from 'mongoose';
-import { BadRequestException, UseFilters } from '@nestjs/common';
-import {
-  SocketException,
-  SocketExceptionFilter,
-} from 'src/common/filiters/socket.exception';
+import { UseFilters } from '@nestjs/common';
+import { SocketExceptionFilter } from 'src/common/filiters/socket.exception';
 import { InjectQueue, Processor } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { MessageType } from 'src/schemas/chat.schema';
+import { ExitRecordService } from 'src/exitRecord/exit-record.service';
 
 @UseFilters(new SocketExceptionFilter())
 @Processor('chat')
@@ -44,6 +41,7 @@ export class ChatGateway
   constructor(
     @InjectQueue('chat') private readonly chatQueue: Queue,
     private readonly roomService: ChatRoomService,
+    private readonly exitRecordService: ExitRecordService,
   ) {}
 
   handleConnection(@ConnectedSocket() client: Socket) {
@@ -52,12 +50,24 @@ export class ChatGateway
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
-    // Handle WebSocket disconnection
     console.log(`Client disconnected: ${client.id}`);
   }
 
   afterInit(server: Server) {
     console.log('WebSocket gateway initialized');
+  }
+
+  @SubscribeMessage('leaveRoom')
+  leaveChatRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: BaseChatRoomType,
+  ) {
+    const { userId, roomId } = payload;
+    this.exitRecordService.upsertExitRecord({
+      userId,
+      roomId: new Types.ObjectId(roomId),
+      leavedAt: new Date(),
+    });
   }
 
   @SubscribeMessage('enterChatRoom')
@@ -83,6 +93,7 @@ export class ChatGateway
   ): void {
     const { nickname, roomId } = payload;
     const members = payload.members;
+
     // if (members.length === 0) {
     //   throw new SocketException('BadRequest', '초대할 사람을 적용해주세요');
     // }
@@ -168,14 +179,11 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: PostBookmarkType,
   ): void {
-    const { longitude, latitude, roomId } = payload;
+    const { location, roomId } = payload;
 
     this.server.to(`${roomId}`).emit(`postBookmark`, {
       sender: client.id,
-      data: {
-        longitude,
-        latitude,
-      },
+      location,
     });
   }
 

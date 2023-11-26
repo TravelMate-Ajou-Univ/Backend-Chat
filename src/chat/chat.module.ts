@@ -7,6 +7,7 @@ import { ChatService } from './chat.service';
 import { ChatRepository } from './chat-repository';
 import { ChatRoomModule } from 'src/chatRoom/chat-room.module';
 import { BullModule } from '@nestjs/bull';
+import { ExitRecordModule } from 'src/exitRecord/exit-record.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { BullModule } from '@nestjs/bull';
     BullModule.registerQueue({
       name: 'chat',
     }),
+    ExitRecordModule,
   ],
   controllers: [ChatController],
   providers: [ChatGateway, ChatService, ChatRepository],

@@ -6,6 +6,8 @@ import { ChatRoomService } from './chat-room.service';
 import { UserModule } from 'src/user/user.module';
 import { ChatModule } from 'src/chat/chat.module';
 import { ChatRoomRepository } from './chat-room.repository';
+import { HttpModule } from '@nestjs/axios';
+import { ExitRecordModule } from 'src/exitRecord/exit-record.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { ChatRoomRepository } from './chat-room.repository';
     MongooseModule.forFeature([
       { name: ChatRoom.name, schema: ChatRoomSchema },
     ]),
+    HttpModule,
+    ExitRecordModule,
   ],
   controllers: [ChatRoomController],
   providers: [ChatRoomService, ChatRoomRepository],

@@ -20,4 +20,11 @@ export class ChatRepository {
   async findLastChatByRoomId(roomId: Types.ObjectId): Promise<Chat | null> {
     return await this.chatModel.findOne({ roomId }).sort({ createdAt: 'desc' });
   }
+
+  async findManyUnReadChatCount(roomId: Types.ObjectId, leavedAt: Date) {
+    return await this.chatModel.count({
+      roomId,
+      createdAt: { $gt: leavedAt },
+    });
+  }
 }

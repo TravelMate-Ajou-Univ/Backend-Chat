@@ -16,7 +16,11 @@ import { ChatRoomResponseDto } from './dtos/res/chat-room-response.dto';
 import { ChatRoomRepository } from './chat-room.repository';
 import { BroadCastUserId } from 'src/chat/types/chat-type';
 import { MessageType } from 'src/schemas/chat.schema';
-import { last } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { ExitRecordService } from 'src/exitRecord/exit-record.service';
+import { exit } from 'process';
 
 @Injectable()
 export class ChatRoomService {
@@ -24,6 +28,9 @@ export class ChatRoomService {
     private readonly roomRepository: ChatRoomRepository,
     private readonly chatService: ChatService,
     private readonly userService: UserService,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+    private readonly exitRecordService: ExitRecordService,
   ) {}
 
   async getMyChatRooms(userId: number): Promise<ChatRoomResponseDto[]> {
@@ -32,12 +39,25 @@ export class ChatRoomService {
 
     for (const chatRoom of chatRooms) {
       const members = await this.userService.findUsersByIds(chatRoom.memberIds);
+
       const lastChat = await this.chatService.getLastChatById(chatRoom._id);
+
+      const exitRecord =
+        await this.exitRecordService.fetchExitRecordByUserAndRoomId(
+          userId,
+          chatRoom._id,
+        );
+
+      const unReadCount = await this.chatService.getUnReadChatCount(
+        chatRoom._id,
+        exitRecord ? exitRecord.leavedAt : chatRoom.createdAt,
+      );
 
       chatRoomDtos.push({
         chatRoom,
         members,
         lastChat,
+        unReadCount,
       });
     }
 
@@ -71,6 +91,21 @@ export class ChatRoomService {
       roomId: chatRoom._id,
       content: invitationString,
     });
+
+    const baseURL = this.configService.getOrThrow<string>('API_SERVER_URL');
+    const { data } = await firstValueFrom(
+      this.httpService.post(
+        baseURL,
+        {
+          imp_key: this.configService.get<string>('iamport.IMP_KEY'), // REST API 키
+          imp_secret: this.configService.get<string>('iamport.IMP_SECRET'), // REST API Secret
+        },
+
+        {
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
 
     return { chatRoom, members: users };
   }

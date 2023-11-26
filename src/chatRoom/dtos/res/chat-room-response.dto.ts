@@ -9,4 +9,10 @@ export class ChatRoomResponseDto extends CreateChatRoomResponseDto {
   })
   @Expose()
   lastChat: ChatDto | null;
+
+  @ApiProperty({
+    description: '마지막 채팅 정보',
+  })
+  @Expose()
+  unReadCount: number;
 }

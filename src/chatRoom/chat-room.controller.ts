@@ -25,10 +25,12 @@ export class ChatRoomController {
 
   @ApiOperation({ summary: '나의 채팅방 조회' })
   @ApiResponse({})
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard)
   @Get('me/chatrooms')
-  async getMyChatRooms(@CurrentUser() user: UserEntity) {
-    return await this.chatRoomService.getMyChatRooms(user.id);
+  async getMyChatRooms() {
+    const userId = 2;
+    return await this.chatRoomService.getMyChatRooms(userId);
   }
+  // @CurrentUser() user: UserEntity;
 }
