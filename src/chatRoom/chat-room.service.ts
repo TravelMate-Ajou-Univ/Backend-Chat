@@ -92,21 +92,6 @@ export class ChatRoomService {
       content: invitationString,
     });
 
-    const baseURL = this.configService.getOrThrow<string>('API_SERVER_URL');
-    const { data } = await firstValueFrom(
-      this.httpService.post(
-        baseURL,
-        {
-          imp_key: this.configService.get<string>('iamport.IMP_KEY'), // REST API 키
-          imp_secret: this.configService.get<string>('iamport.IMP_SECRET'), // REST API Secret
-        },
-
-        {
-          headers: { 'Content-Type': 'application/json' },
-        },
-      ),
-    );
-
     return { chatRoom, members: users };
   }
 
