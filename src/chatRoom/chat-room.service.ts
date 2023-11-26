@@ -19,7 +19,7 @@ import { MessageType } from 'src/schemas/chat.schema';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { ExitRecordService } from 'src/exitRecord/exit-record.service';
-import { exit } from 'process';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ChatRoomService {
@@ -90,6 +90,12 @@ export class ChatRoomService {
       roomId: chatRoom._id,
       content: invitationString,
     });
+
+    const url =
+      this.configService.get('API_SERVER_URL') +
+      `/chat-room/${chatRoom._id}/bookmark-collection`;
+
+    await firstValueFrom(this.httpService.post(url, { title: chatRoom.name }));
 
     return { chatRoom, members: users, lastChat };
   }
