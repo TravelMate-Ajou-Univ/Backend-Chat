@@ -16,7 +16,6 @@ import { ChatRoomResponseDto } from './dtos/res/chat-room-response.dto';
 import { ChatRoomRepository } from './chat-room.repository';
 import { BroadCastUserId } from 'src/chat/types/chat-type';
 import { MessageType } from 'src/schemas/chat.schema';
-import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { ExitRecordService } from 'src/exitRecord/exit-record.service';
@@ -85,14 +84,14 @@ export class ChatRoomService {
 
     const chatRoom = await this.roomRepository.createChatRoom(dto, userId);
 
-    await this.chatService.createChat({
+    const lastChat = await this.chatService.createChat({
       userId: BroadCastUserId,
       type: MessageType.TEXT,
       roomId: chatRoom._id,
       content: invitationString,
     });
 
-    return { chatRoom, members: users };
+    return { chatRoom, members: users, lastChat };
   }
 
   async inviteFriendToRoom(friendIds: number[], roomId: Types.ObjectId) {

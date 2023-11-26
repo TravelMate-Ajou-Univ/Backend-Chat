@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { ChatRoomDto } from '../chat-room.dto';
+import { ChatDto } from 'src/chat/dto/chat.dto';
 
 export type UserInfo = {
   id: number;
@@ -31,4 +32,10 @@ export class CreateChatRoomResponseDto {
   })
   @Expose()
   members: UserInfo[];
+
+  @ApiProperty({
+    description: '마지막 채팅',
+  })
+  @Expose()
+  lastChat: ChatDto | null;
 }
