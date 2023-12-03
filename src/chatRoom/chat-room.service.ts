@@ -181,4 +181,15 @@ export class ChatRoomService {
 
     await this.roomRepository.updateChatRoom(room);
   }
+
+  async getChatsInRoom(id: string, userId: number) {
+    const roomId = new Types.ObjectId(id);
+    const chats = await this.chatService.getChatInRoom(roomId);
+    // const lastChat =
+    //   await this.exitRecordService.fetchExitRecordByUserAndRoomId(
+    //     userId,
+    //     roomId,
+    //   );
+    return chats;
+  }
 }

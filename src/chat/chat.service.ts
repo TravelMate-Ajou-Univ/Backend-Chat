@@ -19,4 +19,8 @@ export class ChatService {
   async getUnReadChatCount(id: Types.ObjectId, leavedAt: Date) {
     return await this.chatRepository.findManyUnReadChatCount(id, leavedAt);
   }
+
+  async getChatInRoom(id: Types.ObjectId) {
+    return await this.chatRepository.findChatsByRoomId(id);
+  }
 }

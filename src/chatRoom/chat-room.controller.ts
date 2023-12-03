@@ -65,4 +65,16 @@ export class ChatRoomController {
       token,
     );
   }
+
+  @ApiOperation({ summary: '채팅방내에 있는 채팅들 불러오는 API' })
+  @ApiResponse({})
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('chatroom/:id/chats')
+  async getChatsInRoom(
+    @CurrentUser() user: UserEntity,
+    @Param('id') id: string,
+  ) {
+    return await this.chatRoomService.getChatsInRoom(id, user.id);
+  }
 }

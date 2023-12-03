@@ -14,7 +14,7 @@ export class ChatRepository {
   }
 
   async findChatsByRoomId(roomId: Types.ObjectId): Promise<Chat[]> {
-    return await this.chatModel.find({ roomId });
+    return await this.chatModel.find({ roomId }).sort({ createdAt: 'desc' });
   }
 
   async findLastChatByRoomId(roomId: Types.ObjectId): Promise<Chat | null> {
