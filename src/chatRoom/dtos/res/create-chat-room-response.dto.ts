@@ -6,7 +6,7 @@ import { ChatDto } from 'src/chat/dto/chat.dto';
 export type UserInfo = {
   id: number;
   nickname: string;
-  profileImageId: number | null;
+  profileImageUrl: string | null;
 };
 
 export class CreateChatRoomResponseDto {

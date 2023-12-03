@@ -6,6 +6,10 @@ export type BaseChatRoomType = {
   user: JwtPayload;
 };
 
+export type LeaveRoomType = BaseChatRoomType & {
+  roomId: string;
+};
+
 export type EnterChatRoomType = BaseChatRoomType & {
   roomId: string;
 };

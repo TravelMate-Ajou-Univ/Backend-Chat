@@ -18,6 +18,7 @@ import {
   EnterChatRoomType,
   InviteFriendType,
   SendMessageType,
+  LeaveRoomType,
 } from './types/chat-type';
 import { ChatRoomService } from 'src/chatRoom/chat-room.service';
 import { Types } from 'mongoose';
@@ -77,19 +78,19 @@ export class ChatGateway
   }
 
   @SubscribeMessage('leaveRoom')
-  leaveChatRoom(
+  async leaveChatRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: BaseChatRoomType,
+    @MessageBody() payload: LeaveRoomType,
   ) {
-    const roomId = this.extractRoomIdFromSocket(client);
+    const { user, roomId } = payload;
 
-    const { user } = payload;
-
-    this.exitRecordService.upsertExitRecord({
+    await this.exitRecordService.upsertExitRecord({
       userId: user.id,
       roomId: new Types.ObjectId(roomId),
       leavedAt: new Date(),
     });
+
+    client.leave(roomId);
   }
 
   @SubscribeMessage('enterChatRoom')
@@ -110,7 +111,7 @@ export class ChatGateway
 
     const message = `${user.nickname}님이 방에 입장하였습니다.`;
 
-    client.join(roomId);
+    client.leave(`${roomId}`);
 
     this.server.to(`${roomId}`).emit('adminMessage', {
       sender: client.id,
@@ -263,6 +264,10 @@ export class ChatGateway
       userId: BroadCastUserId,
       sender: client.id,
       content,
+      leaveUserId: id,
+    });
+
+    this.server.to(`${roomId}`).emit('exitChatRoom', {
       leaveUserId: id,
     });
   }

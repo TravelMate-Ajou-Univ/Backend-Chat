@@ -6,4 +6,5 @@ export class UserEntity {
   profileImageId: number | null;
   createdAt: Date;
   updatedAt: Date;
+  profileImageUrl: string | null;
 }

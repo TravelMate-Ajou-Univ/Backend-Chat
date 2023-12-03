@@ -6,7 +6,7 @@ import { UserService } from 'src/user/user.service';
 export interface JwtPayload {
   id: number;
   nickname: string;
-  profileImageId: number;
+  profileImageUrl: string | null;
 }
 
 @Injectable()
