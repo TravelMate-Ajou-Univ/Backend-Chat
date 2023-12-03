@@ -111,7 +111,7 @@ export class ChatGateway
 
     const message = `${user.nickname}님이 방에 입장하였습니다.`;
 
-    client.leave(`${roomId}`);
+    client.join(`${roomId}`);
 
     this.server.to(`${roomId}`).emit('adminMessage', {
       sender: client.id,
