@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Types } from 'mongoose';
+import { Types, ObjectId } from 'mongoose';
 import { ChatRoom } from 'src/schemas/chat-room.schema';
 import { CreateChatRoomDto } from './dtos/create-chat-room.dto';
 import { UserService } from 'src/user/user.service';
@@ -34,9 +34,40 @@ export class ChatRoomService {
 
   //북마크 컬렉션 id, 북마크 id, 채팅방 멤버들 누가 있는지
   //내 북마크컬렉션 페이지네이션 적용하지 않은 것
-  async getSpecificChatRoomDetail() {
-    //TODO: 방을 먼저 조회
-    //TODO: 방에 해당하는 북마크 컬렉션 조회, 방 멤버들 정보 받아오는 Http call
+  async getSpecificChatRoomDetail(
+    userId: number,
+    roomId: string,
+    token: string,
+  ) {
+    console.log(token);
+    const room = await this.roomRepository.findRoomById(
+      new Types.ObjectId(roomId),
+    );
+
+    if (!room) {
+      throw new BadRequestException('존재하지 않는 방입니다.');
+    }
+
+    if (room.memberIds.indexOf(userId) === -1) {
+      throw new BadRequestException('방에 접근권한이 없는 유저입니다');
+    }
+
+    const baseUrl = this.configService.get<string>('API_SERVER_URL');
+    const url = `${baseUrl}/chat-room/${roomId}/bookmark-collection/details`;
+
+    const { data } = await firstValueFrom(
+      this.httpService.get(url, {
+        headers: {
+          Authorization: token,
+        },
+      }),
+    );
+
+    const members = await this.userService.findUsersByIds(room.memberIds);
+
+    const { bookmarks, collectionId } = data;
+
+    return { members, bookmarks, collectionId };
   }
   async getRoomByIdOrThrow(roomId: Types.ObjectId) {
     const room = await this.roomRepository.findRoomById(roomId);

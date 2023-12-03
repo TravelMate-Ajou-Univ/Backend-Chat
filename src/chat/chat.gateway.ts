@@ -259,7 +259,7 @@ export class ChatGateway
     @MessageBody() payload: PostBookmarkType,
   ): Promise<void> {
     const { locationsWithContent, bookmarkCollectionId } = payload;
-
+    console.log(payload);
     const roomId = this.extractRoomIdFromSocket(client);
     const token = client.handshake.auth.token;
 

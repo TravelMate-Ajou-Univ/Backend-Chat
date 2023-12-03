@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/user/strategies/jwt.strategy';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -6,6 +16,7 @@ import { ChatRoomService } from './chat-room.service';
 import { CreateChatRoomDto } from './dtos/create-chat-room.dto';
 import { UserEntity } from '../user/entities/user.entity';
 import { CreateChatRoomResponseDto } from './dtos/res/create-chat-room-response.dto';
+import { Request } from 'express';
 
 @Controller()
 export class ChatRoomController {
@@ -37,7 +48,21 @@ export class ChatRoomController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('chatroom/:id')
-  async getSpecificChatRoomDetail(@CurrentUser() user: UserEntity) {
-    return await this.chatRoomService.getSpecificChatRoomDetail();
+  async getSpecificChatRoomDetail(
+    @CurrentUser() user: UserEntity,
+    @Param('id') id: string,
+    @Req() request: Request,
+  ) {
+    const token = request.headers.authorization;
+
+    if (!token) {
+      throw new BadRequestException('토큰이 누락되었습니다.');
+    }
+
+    return await this.chatRoomService.getSpecificChatRoomDetail(
+      user.id,
+      id,
+      token,
+    );
   }
 }
