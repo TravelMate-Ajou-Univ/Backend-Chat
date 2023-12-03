@@ -39,7 +39,6 @@ export class ChatRoomService {
     roomId: string,
     token: string,
   ) {
-    console.log(token);
     const room = await this.roomRepository.findRoomById(
       new Types.ObjectId(roomId),
     );
@@ -55,19 +54,22 @@ export class ChatRoomService {
     const baseUrl = this.configService.get<string>('API_SERVER_URL');
     const url = `${baseUrl}/chat-room/${roomId}/bookmark-collection/details`;
 
-    const { data } = await firstValueFrom(
-      this.httpService.get(url, {
-        headers: {
-          Authorization: token,
-        },
-      }),
-    );
+    try {
+      const { data } = await firstValueFrom(
+        this.httpService.get(url, {
+          headers: {
+            Authorization: token,
+          },
+        }),
+      );
 
-    const members = await this.userService.findUsersByIds(room.memberIds);
+      const members = await this.userService.findUsersByIds(room.memberIds);
+      const { bookmarks, collectionId } = data;
 
-    const { bookmarks, collectionId } = data;
-
-    return { members, bookmarks, collectionId };
+      return { members, bookmarks, collectionId };
+    } catch (error) {
+      throw new Error(error);
+    }
   }
   async getRoomByIdOrThrow(roomId: Types.ObjectId) {
     const room = await this.roomRepository.findRoomById(roomId);
