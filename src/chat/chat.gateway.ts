@@ -172,7 +172,14 @@ export class ChatGateway
 
     this.chatQueue.add(
       'send-message',
-      { userId: id, nickname, content, createdAt, type: MessageType.TEXT },
+      {
+        userId: id,
+        nickname,
+        roomId,
+        content,
+        createdAt,
+        type: MessageType.TEXT,
+      },
       {
         removeOnComplete: true,
       },
