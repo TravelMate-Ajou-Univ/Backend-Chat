@@ -209,7 +209,14 @@ export class ChatGateway
 
     this.chatQueue.add(
       'send-message',
-      { userId: id, nickname, content, createdAt, type: MessageType.IMAGE },
+      {
+        userId: id,
+        nickname,
+        roomId,
+        content,
+        createdAt,
+        type: MessageType.IMAGE,
+      },
       {
         removeOnComplete: true,
       },
@@ -266,7 +273,7 @@ export class ChatGateway
     @MessageBody() payload: PostBookmarkType,
   ): Promise<void> {
     const { locationsWithContent, bookmarkCollectionId } = payload;
-    console.log(payload);
+
     const roomId = this.extractRoomIdFromSocket(client);
     const token = client.handshake.auth.token;
 
@@ -298,7 +305,6 @@ export class ChatGateway
     @MessageBody() payload: DeleteBookmarkType,
   ): void {
     const { bookmarkIds, bookmarkCollectionId } = payload;
-    console.log(payload);
     const roomId = this.extractRoomIdFromSocket(client);
     const token = client.handshake.auth.token;
 
