@@ -1,7 +1,12 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
+import { NotFoundError, firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -14,14 +19,40 @@ export class UserService {
     const baseUrl = this.configService.get<string>('API_SERVER_URL');
     const queryParams = userIds.map((id) => `userIds=${id}`).join('&');
     const url = `${baseUrl}/users?${queryParams}`;
+
     const { data } = await firstValueFrom(this.httpService.get(url));
     return data;
   }
 
+  async findUserByToken(token: string) {
+    try {
+      const baseUrl = this.configService.get<string>('API_SERVER_URL');
+      const url = `${baseUrl}/users/me`;
+
+      const { data } = await firstValueFrom(
+        this.httpService.get(url, {
+          headers: {
+            Authorization: token,
+          },
+        }),
+      );
+
+      return data;
+    } catch (error) {
+      return null;
+    }
+  }
+
   async findUserById(userId: number) {
-    const baseUrl = this.configService.get<string>('API_SERVER_URL');
-    const url = `${baseUrl}/users?userIds=${userId}`;
-    const { data } = await firstValueFrom(this.httpService.get(url));
-    return data;
+    try {
+      const baseUrl = this.configService.get<string>('API_SERVER_URL');
+      const url = `${baseUrl}/users/${userId}`;
+
+      const { data } = await firstValueFrom(this.httpService.get(url));
+
+      return data;
+    } catch (error) {
+      throw new NotFoundException('존재하지 않는 회원입니다.');
+    }
   }
 }

@@ -11,6 +11,7 @@ import { UserModule } from './user/user.module';
 import { RedisModule } from './redis/redis-module';
 import { QueueModule } from './bull/queue.module';
 import { ExitRecordModule } from './exitRecord/exit-record.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ExitRecordModule } from './exitRecord/exit-record.module';
     RedisModule,
     QueueModule,
     ExitRecordModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService],

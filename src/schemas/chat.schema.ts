@@ -17,6 +17,7 @@ export class Chat {
   @Prop({
     required: true,
     ref: 'ChatRoom',
+    index: true,
   })
   roomId: Types.ObjectId;
 
@@ -37,6 +38,7 @@ export class Chat {
 
   @Prop({
     default: Date.now(),
+    index: true,
   })
   createdAt: Date;
 }

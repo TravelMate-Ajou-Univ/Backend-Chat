@@ -1,28 +1,26 @@
-import { ArgumentsHost, Catch } from '@nestjs/common';
+import { ArgumentsHost, Catch, HttpException } from '@nestjs/common';
 import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
 
-export type SocketExceptionStatus =
-  | 'BadRequest'
-  | 'Unauthorized'
-  | 'Forbidden'
-  | 'NotFound'
-  | 'Conflict'
-  | 'InternalServerError';
+@Catch(WsException, HttpException)
+export class WebsocketExceptionsFilter extends BaseWsExceptionFilter {
+  catch(exception: WsException | HttpException, host: ArgumentsHost) {
+    const client = host.switchToWs().getClient() as WebSocket;
 
-export class SocketException extends WsException {
-  constructor(status: SocketExceptionStatus, message: string) {
-    super({ status, message });
-  }
-}
+    const error =
+      exception instanceof WsException
+        ? exception.getError()
+        : exception.getResponse();
 
-@Catch(Error)
-export class SocketExceptionFilter extends BaseWsExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
-    if (exception instanceof SocketException) {
-      const ackCallback = host.getArgByIndex(2);
-      ackCallback(exception);
-    } else {
-      console.error(exception);
-    }
+    const details = error instanceof Object ? { ...error } : { message: error };
+
+    client.send(
+      JSON.stringify({
+        event: 'error',
+        data: {
+          id: (client as any).id,
+          ...details,
+        },
+      }),
+    );
   }
 }

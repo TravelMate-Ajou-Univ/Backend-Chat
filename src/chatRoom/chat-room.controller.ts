@@ -31,4 +31,13 @@ export class ChatRoomController {
   async getMyChatRooms(@CurrentUser() user: UserEntity) {
     return await this.chatRoomService.getMyChatRooms(user.id);
   }
+
+  @ApiOperation({ summary: '특정 채팅방 상세조회' })
+  @ApiResponse({})
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('chatroom/:id')
+  async getSpecificChatRoomDetail(@CurrentUser() user: UserEntity) {
+    return await this.chatRoomService.getSpecificChatRoomDetail();
+  }
 }

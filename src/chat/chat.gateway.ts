@@ -7,32 +7,39 @@ import {
   OnGatewayInit,
   ConnectedSocket,
   MessageBody,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import {
   BaseChatRoomType,
   BroadCastUserId,
   DeleteBookmarkType,
-  ExtendChatType,
-  InviteChatRoomType,
   PostBookmarkType,
+  EnterChatRoomType,
+  InviteFriendType,
+  SendMessageType,
 } from './types/chat-type';
 import { ChatRoomService } from 'src/chatRoom/chat-room.service';
 import { Types } from 'mongoose';
-import { UseFilters } from '@nestjs/common';
-import { SocketExceptionFilter } from 'src/common/filiters/socket.exception';
+import { UseFilters, UseGuards } from '@nestjs/common';
 import { InjectQueue, Processor } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { MessageType } from 'src/schemas/chat.schema';
 import { ExitRecordService } from 'src/exitRecord/exit-record.service';
+import { WsGuard } from 'src/common/guards/web-socket.guard';
+import { WebsocketExceptionsFilter } from 'src/common/filiters/socket.exception';
+import { firstValueFrom } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
 
-@UseFilters(new SocketExceptionFilter())
 @Processor('chat')
 @WebSocketGateway({
   cors: {
     origin: '*',
   },
 })
+@UseFilters(WebsocketExceptionsFilter)
+@UseGuards(WsGuard)
 export class ChatGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
@@ -42,7 +49,19 @@ export class ChatGateway
     @InjectQueue('chat') private readonly chatQueue: Queue,
     private readonly roomService: ChatRoomService,
     private readonly exitRecordService: ExitRecordService,
+    private readonly configService: ConfigService,
+    private readonly http: HttpService,
   ) {}
+
+  private extractRoomIdFromSocket(client: Socket): string {
+    const roomId = [...client.rooms].slice(1)[0];
+
+    if (!roomId) {
+      throw new WsException('roomId를 찾을 수 없습니다.');
+    }
+
+    return roomId;
+  }
 
   handleConnection(@ConnectedSocket() client: Socket) {
     // Handle new WebSocket connection
@@ -62,24 +81,37 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: BaseChatRoomType,
   ) {
-    const { userId, roomId } = payload;
+    const roomId = this.extractRoomIdFromSocket(client);
+
+    const { user } = payload;
+
     this.exitRecordService.upsertExitRecord({
-      userId,
+      userId: user.id,
       roomId: new Types.ObjectId(roomId),
       leavedAt: new Date(),
     });
   }
 
   @SubscribeMessage('enterChatRoom')
-  enterChatRoom(
+  async EnterChatRoomType(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: BaseChatRoomType,
-  ): void {
-    const { nickname, roomId } = payload;
+    @MessageBody() payload: EnterChatRoomType,
+  ): Promise<void> {
+    const user = payload.user;
+    const roomId = payload.roomId;
 
-    const message = `${nickname}님이 방에 입장하였습니다.`;
+    const room = await this.roomService.getRoomByIdOrThrow(
+      new Types.ObjectId(roomId),
+    );
+
+    if (room.memberIds.indexOf(user.id) === -1) {
+      throw new WsException('채팅방에 접근권한이 없는 유저입니다.');
+    }
+
+    const message = `${user.nickname}님이 방에 입장하였습니다.`;
 
     client.join(roomId);
+
     this.server.to(`${roomId}`).emit('adminMessage', {
       sender: client.id,
       message,
@@ -89,25 +121,28 @@ export class ChatGateway
   @SubscribeMessage('inviteFriend')
   inviteFriend(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: InviteChatRoomType,
+    @MessageBody() payload: InviteFriendType,
   ): void {
-    const { nickname, roomId } = payload;
+    const roomId = this.extractRoomIdFromSocket(client);
+    const nickname = payload.user.nickname;
     const members = payload.members;
-
-    // if (members.length === 0) {
-    //   throw new SocketException('BadRequest', '초대할 사람을 적용해주세요');
-    // }
 
     const content = `${nickname} 님이 ${members
       .map((member) => member.nickname)
       .join(', ')} 님을 방에 초대하였습니다.`;
 
-    this.chatQueue.add('send-message', {
-      content,
-      type: MessageType.TEXT,
-      userId: BroadCastUserId,
-      roomId,
-    });
+    this.chatQueue.add(
+      'send-message',
+      {
+        content,
+        type: MessageType.TEXT,
+        userId: BroadCastUserId,
+        roomId,
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
 
     const friendIds = members.map((member) => {
       return member.id;
@@ -127,22 +162,59 @@ export class ChatGateway
   async handleMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    payload: ExtendChatType,
+    payload: SendMessageType,
   ): Promise<void> {
-    const { roomId, content, userId, nickname } = payload;
+    const roomId = this.extractRoomIdFromSocket(client);
+    const { id, nickname } = payload.user;
+    const content = payload.message;
 
     const createdAt = new Date();
-    payload.type = MessageType.TEXT;
-    payload.createdAt = createdAt;
 
-    this.chatQueue.add('send-message', payload);
+    this.chatQueue.add(
+      'send-message',
+      { userId: id, nickname, content, createdAt, type: MessageType.TEXT },
+      {
+        removeOnComplete: true,
+      },
+    );
 
     this.server.to(`${roomId}`).emit('message', {
       sender: client.id,
-      userId,
+      userId: id,
       content,
       nickname,
-      createdAt: createdAt,
+      type: MessageType.TEXT,
+      createdAt,
+    });
+  }
+
+  @SubscribeMessage('sendImage')
+  async handleImage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: SendMessageType,
+  ): Promise<void> {
+    const roomId = this.extractRoomIdFromSocket(client);
+    const { id, nickname } = payload.user;
+    const content = payload.message;
+
+    const createdAt = new Date();
+
+    this.chatQueue.add(
+      'send-message',
+      { userId: id, nickname, content, createdAt, type: MessageType.IMAGE },
+      {
+        removeOnComplete: true,
+      },
+    );
+
+    this.server.to(`${roomId}`).emit('message', {
+      sender: client.id,
+      userId: id,
+      content,
+      nickname,
+      type: MessageType.IMAGE,
+      createdAt,
     });
   }
 
@@ -151,39 +223,65 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: BaseChatRoomType,
   ): Promise<void> {
-    const { nickname, roomId, userId } = payload;
+    const { nickname, id } = payload.user;
+    const roomId = this.extractRoomIdFromSocket(client);
 
     const content = `${nickname}님이 방에서 나갔습니다.`;
 
-    this.chatQueue.add('send-message', {
-      content,
-      type: MessageType.TEXT,
-      userId: BroadCastUserId,
-      roomId,
-    });
+    this.chatQueue.add(
+      'send-message',
+      {
+        content,
+        type: MessageType.TEXT,
+        userId: BroadCastUserId,
+        roomId,
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
 
     client.leave(`${roomId}`);
 
-    await this.roomService.exitChatRoom(userId, new Types.ObjectId(roomId));
+    await this.roomService.exitChatRoom(id, new Types.ObjectId(roomId));
 
     this.server.to(`${roomId}`).emit('message', {
       userId: BroadCastUserId,
       sender: client.id,
       content,
-      leaveUserId: userId,
+      leaveUserId: id,
     });
   }
 
   @SubscribeMessage('postBookmark')
-  postBookmark(
+  async postBookmark(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: PostBookmarkType,
-  ): void {
-    const { location, roomId } = payload;
+  ): Promise<void> {
+    const { locationsWithContent, bookmarkCollectionId } = payload;
+
+    const roomId = this.extractRoomIdFromSocket(client);
+    const token = client.handshake.auth.token;
+
+    const url =
+      this.configService.get<string>('API_SERVER_URL') +
+      `/chat-room/bookmark-collection/${bookmarkCollectionId}/bookmarks`;
+
+    const { data } = await firstValueFrom(
+      this.http.post(
+        url,
+        { locationsWithContent },
+        {
+          headers: {
+            Authorization: token,
+          },
+        },
+      ),
+    );
 
     this.server.to(`${roomId}`).emit(`postBookmark`, {
       sender: client.id,
-      location,
+      bookmark: data,
     });
   }
 
@@ -192,11 +290,26 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: DeleteBookmarkType,
   ): void {
-    const { bookmarkId, roomId } = payload;
+    const { bookmarkIds, bookmarkCollectionId } = payload;
+    console.log(payload);
+    const roomId = this.extractRoomIdFromSocket(client);
+    const token = client.handshake.auth.token;
+
+    this.chatQueue.add(
+      'delete-bookmark',
+      {
+        bookmarkCollectionId,
+        bookmarkIds,
+        token,
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
 
     this.server.to(`${roomId}`).emit(`deleteBookmark`, {
       sender: client.id,
-      bookmarkId,
+      bookmarkIds,
     });
   }
 }

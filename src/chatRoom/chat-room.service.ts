@@ -32,6 +32,22 @@ export class ChatRoomService {
     private readonly exitRecordService: ExitRecordService,
   ) {}
 
+  //북마크 컬렉션 id, 북마크 id, 채팅방 멤버들 누가 있는지
+  //내 북마크컬렉션 페이지네이션 적용하지 않은 것
+  async getSpecificChatRoomDetail() {
+    //TODO: 방을 먼저 조회
+    //TODO: 방에 해당하는 북마크 컬렉션 조회, 방 멤버들 정보 받아오는 Http call
+  }
+  async getRoomByIdOrThrow(roomId: Types.ObjectId) {
+    const room = await this.roomRepository.findRoomById(roomId);
+
+    if (!room) {
+      throw new BadRequestException('존재하지 않는 방입니다.');
+    }
+
+    return room;
+  }
+
   async getMyChatRooms(userId: number): Promise<ChatRoomResponseDto[]> {
     const chatRooms = await this.roomRepository.findRoomByUserId(userId);
     const chatRoomDtos: ChatRoomResponseDto[] = [];

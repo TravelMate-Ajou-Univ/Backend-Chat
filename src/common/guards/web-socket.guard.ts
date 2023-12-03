@@ -1,33 +1,40 @@
-// import {
-//   CanActivate,
-//   ExecutionContext,
-//   Injectable,
-//   Logger,
-// } from '@nestjs/common';
-// import { WsException } from '@nestjs/websockets';
-// import { Socket } from 'socket.io';
-// import { AuthService } from '../auth/auth.service';
-// import { User } from '../auth/entity/user.entity';
-// import { UserService } from '../../user/user.service';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
+import { AuthService } from 'src/auth/auth.service';
+import { UserService } from 'src/user/user.service';
 
-// @Injectable()
-// export class WsJwtGuard implements CanActivate {
-//   private logger: Logger = new Logger(WsJwtGuard.name);
+export interface JwtPayload {
+  id: number;
+  nickname: string;
+  profileImageId: number;
+}
 
-//   constructor(private authService: AuthService) {}
+@Injectable()
+export class WsGuard implements CanActivate {
+  constructor(
+    private readonly userService: UserService,
+    private readonly authService: AuthService,
+  ) {}
 
-//   async canActivate(context: ExecutionContext): Promise<boolean> {
-//     try {
-//       const client: Socket = context.switchToWs().getClient<Socket>();
-//       const authToken: string = client.handshake?.query?.token;
-//       const user: User = await this.UserService.client.join(
-//         `house_${user?.house?.id}`,
-//       );
-//       context.switchToHttp().getRequest().user = user;
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const token = context.switchToWs().getClient().handshake.auth.token;
 
-//       return Boolean(user);
-//     } catch (err) {
-//       throw new WsException(err.message);
-//     }
-//   }
-// }
+    if (!token) {
+      throw new WsException('No token provided');
+    }
+
+    try {
+      return new Promise(async (resolve, reject) => {
+        const user = await this.userService.findUserByToken(token);
+        if (user) {
+          context.switchToWs().getData().user = user; // save user info to a user object.
+          resolve(Boolean(user));
+        } else {
+          reject('unauthorized');
+        }
+      });
+    } catch (ex) {
+      throw new WsException(ex.message);
+    }
+  }
+}
