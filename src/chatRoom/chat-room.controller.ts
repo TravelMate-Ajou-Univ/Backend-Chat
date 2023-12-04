@@ -10,7 +10,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/user/strategies/jwt.strategy';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { ChatRoomService } from './chat-room.service';
@@ -69,6 +74,9 @@ export class ChatRoomController {
   }
 
   @ApiOperation({ summary: '채팅방내에 있는 채팅들 불러오는 API' })
+  @ApiQuery({
+    type: CursorBasePaginationDto,
+  })
   @ApiResponse({})
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
