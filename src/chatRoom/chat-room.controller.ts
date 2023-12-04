@@ -74,9 +74,6 @@ export class ChatRoomController {
   }
 
   @ApiOperation({ summary: '채팅방내에 있는 채팅들 불러오는 API' })
-  @ApiQuery({
-    type: CursorBasePaginationDto,
-  })
   @ApiResponse({})
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
