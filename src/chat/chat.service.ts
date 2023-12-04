@@ -20,7 +20,15 @@ export class ChatService {
     return await this.chatRepository.findManyUnReadChatCount(id, leavedAt);
   }
 
-  async getChatInRoom(id: Types.ObjectId) {
-    return await this.chatRepository.findChatsByRoomId(id);
+  async getChatInRoom(
+    id: Types.ObjectId,
+    limit: number,
+    cursor?: string | null,
+  ) {
+    return await this.chatRepository.findChatsByRoomId(id, limit, cursor);
+  }
+
+  async getFirstChatAfterExit(id: Types.ObjectId, date?: Date) {
+    return await this.chatRepository.getFirstChatAfterExit(id, date);
   }
 }

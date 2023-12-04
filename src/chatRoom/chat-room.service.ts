@@ -20,6 +20,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { ExitRecordService } from 'src/exitRecord/exit-record.service';
 import { firstValueFrom } from 'rxjs';
+import { CursorBasePaginationDto } from 'src/chat/dto/req/cursor-pagiation.dto';
 
 @Injectable()
 export class ChatRoomService {
@@ -32,8 +33,20 @@ export class ChatRoomService {
     private readonly exitRecordService: ExitRecordService,
   ) {}
 
-  //북마크 컬렉션 id, 북마크 id, 채팅방 멤버들 누가 있는지
-  //내 북마크컬렉션 페이지네이션 적용하지 않은 것
+  private async validateRoomWithUser(userId: number, roomId: Types.ObjectId) {
+    const room = await this.roomRepository.findRoomById(roomId);
+
+    if (!room) {
+      throw new BadRequestException('존재하지 않는 채팅방입니다.');
+    }
+
+    if (room.memberIds.indexOf(userId) === -1) {
+      throw new BadRequestException('방에 권한이 없는 유저입니다.');
+    }
+
+    return room;
+  }
+
   async getSpecificChatRoomDetail(
     userId: number,
     roomId: string,
@@ -43,13 +56,7 @@ export class ChatRoomService {
       new Types.ObjectId(roomId),
     );
 
-    if (!room) {
-      throw new BadRequestException('존재하지 않는 방입니다.');
-    }
-
-    if (room.memberIds.indexOf(userId) === -1) {
-      throw new BadRequestException('방에 접근권한이 없는 유저입니다');
-    }
+    await this.validateRoomWithUser(userId, new Types.ObjectId(roomId));
 
     const baseUrl = this.configService.get<string>('API_SERVER_URL');
     const url = `${baseUrl}/chat-room/${roomId}/bookmark-collection/details`;
@@ -70,15 +77,6 @@ export class ChatRoomService {
     } catch (error) {
       throw new Error(error);
     }
-  }
-  async getRoomByIdOrThrow(roomId: Types.ObjectId) {
-    const room = await this.roomRepository.findRoomById(roomId);
-
-    if (!room) {
-      throw new BadRequestException('존재하지 않는 방입니다.');
-    }
-
-    return room;
   }
 
   async getMyChatRooms(userId: number): Promise<ChatRoomResponseDto[]> {
@@ -138,6 +136,7 @@ export class ChatRoomService {
       type: MessageType.TEXT,
       roomId: chatRoom._id,
       content: invitationString,
+      createdAt: new Date(),
     });
 
     const url =
@@ -162,16 +161,10 @@ export class ChatRoomService {
   }
 
   async exitChatRoom(userId: number, roomId: Types.ObjectId) {
-    const room: ChatRoom | null =
-      await this.roomRepository.findRoomById(roomId);
-
-    if (!room) {
-      throw new NotFoundException('찾을 수 없는 채팅방입니다');
-    }
-
-    if (room.memberIds.indexOf(userId) === -1) {
-      throw new BadRequestException('이미 나간 채팅방입니다.');
-    }
+    const room = await this.validateRoomWithUser(
+      userId,
+      new Types.ObjectId(roomId),
+    );
 
     const newMemberIds = room.memberIds.filter((item) => {
       return item !== userId;
@@ -182,14 +175,40 @@ export class ChatRoomService {
     await this.roomRepository.updateChatRoom(room);
   }
 
-  async getChatsInRoom(id: string, userId: number) {
+  async getChatsInRoom(
+    id: string,
+    userId: number,
+    dto: CursorBasePaginationDto,
+  ) {
+    let cursor: string | null | undefined = dto.cursor;
+
     const roomId = new Types.ObjectId(id);
-    const chats = await this.chatService.getChatInRoom(roomId);
-    // const lastChat =
-    //   await this.exitRecordService.fetchExitRecordByUserAndRoomId(
-    //     userId,
-    //     roomId,
-    //   );
-    return chats;
+    const room = await this.validateRoomWithUser(userId, roomId);
+
+    if (!cursor) {
+      const exitRecord =
+        await this.exitRecordService.fetchExitRecordByUserAndRoomId(
+          userId,
+          roomId,
+        );
+
+      const lastChat = await this.chatService.getFirstChatAfterExit(
+        roomId,
+        exitRecord?.leavedAt,
+      );
+
+      cursor = lastChat ? String(lastChat._id) : null;
+    }
+
+    const chats = await this.chatService.getChatInRoom(
+      room._id,
+      dto.limit,
+      cursor,
+    );
+
+    const hasNext = chats.length === dto.limit + 1;
+    const hasPrev = cursor ? true : false;
+
+    return { chats, hasNext, hasPrev, cursor: chats[chats.length - 1] };
   }
 }

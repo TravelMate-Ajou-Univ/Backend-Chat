@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { CreateChatRoomDto } from './dtos/create-chat-room.dto';
 import { UserEntity } from '../user/entities/user.entity';
 import { CreateChatRoomResponseDto } from './dtos/res/create-chat-room-response.dto';
 import { Request } from 'express';
+import { CursorBasePaginationDto } from 'src/chat/dto/req/cursor-pagiation.dto';
 
 @Controller()
 export class ChatRoomController {
@@ -74,7 +76,8 @@ export class ChatRoomController {
   async getChatsInRoom(
     @CurrentUser() user: UserEntity,
     @Param('id') id: string,
+    @Query() dto: CursorBasePaginationDto,
   ) {
-    return await this.chatRoomService.getChatsInRoom(id, user.id);
+    return await this.chatRoomService.getChatsInRoom(id, user.id, dto);
   }
 }

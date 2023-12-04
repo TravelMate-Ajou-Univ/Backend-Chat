@@ -31,4 +31,6 @@ export class CreateChatDto {
     example: '655619f9f92ef0ab82b48a8b',
   })
   roomId: string | Types.ObjectId;
+
+  createdAt?: Date;
 }

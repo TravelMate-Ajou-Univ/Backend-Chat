@@ -13,8 +13,21 @@ export class ChatRepository {
     return await this.chatModel.create(dto);
   }
 
-  async findChatsByRoomId(roomId: Types.ObjectId): Promise<Chat[]> {
-    return await this.chatModel.find({ roomId });
+  async findChatsByRoomId(
+    roomId: Types.ObjectId,
+    limit: number,
+    cursor?: string | null,
+  ): Promise<Chat[]> {
+    return await this.chatModel
+      .find({
+        roomId,
+        ...(cursor && {
+          _id: {
+            $gt: new Types.ObjectId(),
+          },
+        }),
+      })
+      .limit(limit + 1);
   }
 
   async findLastChatByRoomId(roomId: Types.ObjectId): Promise<Chat | null> {
@@ -25,6 +38,13 @@ export class ChatRepository {
     return await this.chatModel.count({
       roomId,
       createdAt: { $gt: leavedAt },
+    });
+  }
+
+  async getFirstChatAfterExit(id: Types.ObjectId, leavedAt?: Date) {
+    return await this.chatModel.findOne({
+      roomId: id,
+      ...(leavedAt && { createdAt: { $gt: leavedAt } }),
     });
   }
 }
