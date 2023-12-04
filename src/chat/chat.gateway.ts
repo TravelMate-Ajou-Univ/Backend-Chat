@@ -101,13 +101,10 @@ export class ChatGateway
     const user = payload.user;
     const roomId = payload.roomId;
 
-    const room = await this.roomService.getRoomByIdOrThrow(
+    await this.roomService.validateRoomWithUser(
+      user.id,
       new Types.ObjectId(roomId),
     );
-
-    if (room.memberIds.indexOf(user.id) === -1) {
-      throw new WsException('채팅방에 접근권한이 없는 유저입니다.');
-    }
 
     const message = `${user.nickname}님이 방에 입장하였습니다.`;
 

@@ -33,7 +33,7 @@ export class ChatRoomService {
     private readonly exitRecordService: ExitRecordService,
   ) {}
 
-  private async validateRoomWithUser(userId: number, roomId: Types.ObjectId) {
+  async validateRoomWithUser(userId: number, roomId: Types.ObjectId) {
     const room = await this.roomRepository.findRoomById(roomId);
 
     if (!room) {
@@ -52,11 +52,10 @@ export class ChatRoomService {
     roomId: string,
     token: string,
   ) {
-    const room = await this.roomRepository.findRoomById(
+    const room = await this.validateRoomWithUser(
+      userId,
       new Types.ObjectId(roomId),
     );
-
-    await this.validateRoomWithUser(userId, new Types.ObjectId(roomId));
 
     const baseUrl = this.configService.get<string>('API_SERVER_URL');
     const url = `${baseUrl}/chat-room/${roomId}/bookmark-collection/details`;
