@@ -13,11 +13,22 @@ export class ExitRecordRepository {
   async upsertExitRecord(dto: UpsertExitRecordDto) {
     const { userId, roomId, leavedAt } = dto;
 
-    await this.exitRecordModel.findOneAndUpdate(
-      { userId, roomId },
-      { $set: { leavedAt } },
-      { upsert: true },
-    );
+    const exitRecord = await this.exitRecordModel.findOne({ userId, roomId });
+
+    exitRecord
+      ? await this.exitRecordModel.updateOne(
+          { _id: exitRecord.id },
+          {
+            userId: exitRecord.userId,
+            roomId: exitRecord.roomId,
+            leavedAt,
+          },
+        )
+      : await this.exitRecordModel.create({
+          userId,
+          roomId,
+          leavedAt,
+        });
   }
 
   async fetchExitRecordByUserAndRoomId(userId: number, roomId: Types.ObjectId) {
