@@ -20,11 +20,19 @@ export class ChatRoomRepository {
       .find({ memberIds: userId })
       .sort({ created_at: -1 });
   }
+
   async findRoomById(roomId: Types.ObjectId): Promise<ChatRoom | null> {
     return await this.roomModel.findById({ _id: roomId });
   }
 
   async updateChatRoom(room: ChatRoom) {
     return await this.roomModel.updateOne({ _id: room._id }, room);
+  }
+
+  async deleteChatRoom(room: ChatRoom) {
+    return await this.roomModel.updateOne(
+      { _id: room._id },
+      { ...room, deletedAt: new Date() },
+    );
   }
 }

@@ -81,8 +81,8 @@ export class ChatRoomController {
   async getChatsInRoom(
     @CurrentUser() user: UserEntity,
     @Param('id') id: string,
-    @Query() dto: CursorBasePaginationDto,
+    // @Query() dto: CursorBasePaginationDto,
   ) {
-    return await this.chatRoomService.getChatsInRoom(id, user.id, dto);
+    return await this.chatRoomService.getChatsInRoom(id, user.id);
   }
 }

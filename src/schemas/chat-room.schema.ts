@@ -22,6 +22,8 @@ export class ChatRoom {
 
   @Prop()
   creatorId: number;
+
+  deletedAt?: Date;
 }
 
 export const ChatRoomSchema = SchemaFactory.createForClass(ChatRoom);

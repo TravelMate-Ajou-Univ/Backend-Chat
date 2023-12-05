@@ -22,10 +22,11 @@ export class ChatService {
 
   async getChatInRoom(
     id: Types.ObjectId,
-    limit: number,
-    cursor?: string | null,
+    // limit: number,
+    // cursor?: string | null,
   ) {
-    return await this.chatRepository.findChatsByRoomId(id, limit, cursor);
+    // return await this.chatRepository.findChatsByRoomId(id, limit, cursor);
+    return await this.chatRepository.findChatsByRoomId(id);
   }
 
   async getFirstChatAfterExit(id: Types.ObjectId, date?: Date) {
