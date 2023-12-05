@@ -163,7 +163,7 @@ export class ChatGateway
     payload: SendMessageType,
   ): Promise<void> {
     const roomId = this.extractRoomIdFromSocket(client);
-    const { id, nickname } = payload.user;
+    const { id, nickname, profileImageId } = payload.user;
     const content = payload.message;
 
     const createdAt = new Date();
@@ -188,6 +188,7 @@ export class ChatGateway
       userId: id,
       content,
       nickname,
+      profileImageId,
       type: MessageType.TEXT,
       createdAt,
     });
@@ -200,7 +201,7 @@ export class ChatGateway
     payload: SendMessageType,
   ): Promise<void> {
     const roomId = this.extractRoomIdFromSocket(client);
-    const { id, nickname } = payload.user;
+    const { id, nickname, profileImageId } = payload.user;
     const content = payload.message;
 
     const createdAt = new Date();
@@ -225,6 +226,7 @@ export class ChatGateway
       userId: id,
       content,
       nickname,
+      profileImageId,
       type: MessageType.IMAGE,
       createdAt,
     });

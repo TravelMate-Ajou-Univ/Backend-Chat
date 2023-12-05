@@ -7,6 +7,7 @@ export interface JwtPayload {
   id: number;
   nickname: string;
   profileImageUrl: string | null;
+  profileImageId: number | null;
 }
 
 @Injectable()
