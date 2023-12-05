@@ -193,12 +193,12 @@ export class ChatRoomService {
         roomId,
       );
 
-    const firstChatAfterExit = await this.chatService.getFirstChatAfterExit(
+    const firstChat = await this.chatService.getFirstChatAfterExit(
       roomId,
       exitRecord?.leavedAt,
     );
 
-    return { chats, firstChatAfterExit };
+    return { chats, firstChat };
     // let cursor: string | null | undefined = dto.cursor;
     // const roomId = new Types.ObjectId(id);
     // const room = await this.validateRoomWithUser(userId, roomId);
