@@ -106,14 +106,7 @@ export class ChatGateway
       new Types.ObjectId(roomId),
     );
 
-    const message = `${user.nickname}님이 방에 입장하였습니다.`;
-
     await client.join(`${roomId}`);
-
-    this.server.to(`${roomId}`).emit('adminMessage', {
-      sender: client.id,
-      message,
-    });
   }
 
   @SubscribeMessage('inviteFriend')
