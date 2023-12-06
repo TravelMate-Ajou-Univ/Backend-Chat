@@ -110,6 +110,13 @@ export class ChatRoomService {
       });
     }
 
+    chatRoomDtos.sort((a, b) => {
+      const createdAtA = a.lastChat?.createdAt || a.chatRoom.createdAt;
+      const createdAtB = b.lastChat?.createdAt || b.chatRoom.createdAt;
+
+      return new Date(createdAtB).getTime() - new Date(createdAtA).getTime();
+    });
+
     return chatRoomDtos;
   }
 

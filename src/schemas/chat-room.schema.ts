@@ -24,6 +24,7 @@ export class ChatRoom {
   @Prop()
   creatorId: number;
 
+  @Prop({})
   deletedAt?: Date;
 }
 
