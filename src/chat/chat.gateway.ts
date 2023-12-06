@@ -64,6 +64,11 @@ export class ChatGateway
     return roomId;
   }
 
+  private validateMessageEmpty(message: string) {
+    if (message.trim() === '') {
+      throw new WsException('보내려는 메세지가 빈 문자열입니다.');
+    }
+  }
   handleConnection(@ConnectedSocket() client: Socket) {
     // Handle new WebSocket connection
     console.log(`Client connected: ${client.id}`);
@@ -158,6 +163,7 @@ export class ChatGateway
     const roomId = this.extractRoomIdFromSocket(client);
     const { id, nickname, profileImageId } = payload.user;
     const content = payload.message;
+    this.validateMessageEmpty(content);
 
     const createdAt = new Date();
 
@@ -197,6 +203,7 @@ export class ChatGateway
     const { id, nickname, profileImageId } = payload.user;
     const content = payload.message;
 
+    this.validateMessageEmpty(content);
     const createdAt = new Date();
 
     this.chatQueue.add(
