@@ -32,7 +32,7 @@ export class ChatRoomRepository {
   async deleteChatRoom(room: ChatRoom) {
     return await this.roomModel.updateOne(
       { _id: room._id },
-      { ...room, deletedAt: new Date() },
+      { $set: { deletedAt: new Date() } },
     );
   }
 }

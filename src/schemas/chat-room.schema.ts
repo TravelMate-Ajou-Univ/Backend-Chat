@@ -14,6 +14,7 @@ export class ChatRoom {
 
   @Prop({
     required: true,
+    index: true,
   })
   memberIds: number[];
 

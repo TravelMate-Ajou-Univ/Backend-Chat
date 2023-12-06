@@ -254,10 +254,9 @@ export class ChatGateway
         removeOnComplete: true,
       },
     );
-
-    client.leave(`${roomId}`);
-
     await this.roomService.exitChatRoom(id, new Types.ObjectId(roomId));
+
+    await client.leave(`${roomId}`);
 
     this.server.to(`${roomId}`).emit('message', {
       userId: BroadCastUserId,

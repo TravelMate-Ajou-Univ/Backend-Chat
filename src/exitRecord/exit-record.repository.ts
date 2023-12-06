@@ -18,11 +18,7 @@ export class ExitRecordRepository {
     exitRecord
       ? await this.exitRecordModel.updateOne(
           { _id: exitRecord.id },
-          {
-            userId: exitRecord.userId,
-            roomId: exitRecord.roomId,
-            leavedAt,
-          },
+          { $set: { leavedAt } },
         )
       : await this.exitRecordModel.create({
           userId,
