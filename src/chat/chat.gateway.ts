@@ -90,7 +90,7 @@ export class ChatGateway
       leavedAt: new Date(),
     });
 
-    client.leave(roomId);
+    await client.leave(roomId);
   }
 
   @SubscribeMessage('enterChatRoom')
