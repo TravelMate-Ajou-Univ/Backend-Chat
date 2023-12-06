@@ -95,6 +95,7 @@ export class ChatGateway
       leavedAt: new Date(),
     });
 
+    this.server.to(client.id).emit('leaveRoom');
     await client.leave(roomId);
   }
 
