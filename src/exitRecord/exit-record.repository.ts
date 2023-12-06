@@ -12,29 +12,26 @@ export class ExitRecordRepository {
 
   async upsertExitRecord(dto: UpsertExitRecordDto) {
     const { userId, roomId, leavedAt } = dto;
-    await this.exitRecordModel.create({
-      userId,
-      roomId,
-      leavedAt,
-    });
-    // const exitRecord = await this.exitRecordModel.findOne({ userId, roomId });
+    // await this.exitRecordModel.create({
+    //   userId,
+    //   roomId,
+    //   leavedAt,
+    // });
+    const exitRecord = await this.exitRecordModel.findOne({ userId, roomId });
 
-    // exitRecord
-    //   ? await this.exitRecordModel.updateOne(
-    //       { _id: exitRecord.id },
-    //       { $set: { leavedAt } },
-    //     )
-    //   : await this.exitRecordModel.create({
-    //       userId,
-    //       roomId,
-    //       leavedAt,
-    //     });
+    exitRecord
+      ? await this.exitRecordModel.updateOne(
+          { _id: exitRecord.id },
+          { $set: { leavedAt } },
+        )
+      : await this.exitRecordModel.create({
+          userId,
+          roomId,
+          leavedAt,
+        });
   }
 
   async fetchExitRecordByUserAndRoomId(userId: number, roomId: Types.ObjectId) {
-    return await this.exitRecordModel
-      .findOne({ roomId, userId })
-      .sort({ leavedAt: -1 }) // leavedAt을 기준으로 내림차순 정렬하여 최신 데이터를 가져옴
-      .limit(1);
+    return await this.exitRecordModel.findOne({ roomId, userId });
   }
 }

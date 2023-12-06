@@ -127,7 +127,7 @@ export class ChatGateway
     const content = `${nickname} 님이 ${members
       .map((member) => member.nickname)
       .join(', ')} 님을 방에 초대하였습니다.`;
-
+    const createdAt = new Date();
     this.chatQueue.add(
       'send-message',
       {
@@ -135,6 +135,7 @@ export class ChatGateway
         type: MessageType.TEXT,
         userId: BroadCastUserId,
         roomId,
+        createdAt,
       },
       {
         removeOnComplete: true,
@@ -152,6 +153,7 @@ export class ChatGateway
       sender: client.id,
       content,
       members,
+      createdAt,
     });
   }
 
@@ -242,7 +244,7 @@ export class ChatGateway
     const roomId = this.extractRoomIdFromSocket(client);
 
     const content = `${nickname}님이 방에서 나갔습니다.`;
-
+    const createdAt = new Date();
     this.chatQueue.add(
       'send-message',
       {
@@ -250,6 +252,7 @@ export class ChatGateway
         type: MessageType.TEXT,
         userId: BroadCastUserId,
         roomId,
+        createdAt,
       },
       {
         removeOnComplete: true,
@@ -264,6 +267,7 @@ export class ChatGateway
       sender: client.id,
       content,
       leaveUserId: id,
+      createdAt,
     });
 
     this.server.to(`${roomId}`).emit('exitChatRoom', {
