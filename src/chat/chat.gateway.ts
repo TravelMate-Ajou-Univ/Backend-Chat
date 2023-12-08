@@ -280,7 +280,7 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: PostBookmarkType,
   ): Promise<void> {
-    const { locationsWithContent, bookmarkCollectionId } = payload;
+    const { locationsWithContent, bookmarkCollectionId, user } = payload;
 
     const roomId = this.extractRoomIdFromSocket(client);
     const token = client.handshake.auth.token;
@@ -304,6 +304,8 @@ export class ChatGateway
     this.server.to(`${roomId}`).emit(`postBookmark`, {
       sender: client.id,
       bookmark: data,
+      userId: user.id,
+      nickname: user.nickname,
     });
   }
 
@@ -312,7 +314,7 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: DeleteBookmarkType,
   ): void {
-    const { bookmarkIds, bookmarkCollectionId } = payload;
+    const { bookmarkIds, bookmarkCollectionId, user } = payload;
     const roomId = this.extractRoomIdFromSocket(client);
     const token = client.handshake.auth.token;
 
@@ -331,6 +333,8 @@ export class ChatGateway
     this.server.to(`${roomId}`).emit(`deleteBookmark`, {
       sender: client.id,
       bookmarkIds,
+      userId: user.id,
+      nickname: user.nickname,
     });
   }
 }
