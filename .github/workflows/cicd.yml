@@ -78,7 +78,7 @@ jobs:
           aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
           region: ap-northeast-2
           application_name: TravelMate-server
-          environment_name: TravelMate-chat-env
+          environment_name: TravelMate-server-env
           version_label: ver-${{ github.sha }}
           use_existing_version_if_available: true
           deployment_package: deploy.zip
